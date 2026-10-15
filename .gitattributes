@@ -1,0 +1,10 @@
+# Enforce LF endings across all platforms to ensure Linux shell scripts and Makefiles run reliably
+* text=auto eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+Makefile text eol=lf
+Dockerfile text eol=lf
