@@ -5,13 +5,152 @@ Landscape A4 slides with modern industrial engineering styling.
 """
 
 import os
+import sys
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase.pdfmetrics import registerFont, registerFontFamily
+from reportlab.pdfbase.ttfonts import TTFont
 
 SLIDE_WIDTH, SLIDE_HEIGHT = landscape(letter)
+
+
+def setup_cyrillic_fonts():
+    """
+    Find and register TrueType Unicode fonts supporting Cyrillic for Windows, Linux, and macOS.
+    Returns (font_normal, font_bold, font_mono, font_mono_bold).
+    """
+    win_dir = os.environ.get("WINDIR", os.environ.get("SYSTEMROOT", "C:\\Windows"))
+    win_fonts = os.path.join(win_dir, "Fonts")
+
+    sans_candidates = [
+        # Windows
+        (os.path.join(win_fonts, "arial.ttf"), os.path.join(win_fonts, "arialbd.ttf")),
+        (os.path.join(win_fonts, "calibri.ttf"), os.path.join(win_fonts, "calibrib.ttf")),
+        (os.path.join(win_fonts, "segoeui.ttf"), os.path.join(win_fonts, "segoeuib.ttf")),
+        ("C:/Windows/Fonts/arial.ttf", "C:/Windows/Fonts/arialbd.ttf"),
+        ("C:/Windows/Fonts/calibri.ttf", "C:/Windows/Fonts/calibrib.ttf"),
+        ("C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/segoeuib.ttf"),
+        # Linux - Debian / Ubuntu
+        ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+        ("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"),
+        ("/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf", "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf"),
+        ("/usr/share/fonts/truetype/freefont/FreeSans.ttf", "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"),
+        ("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf", "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf"),
+        ("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf"),
+        # Linux - RedHat / CentOS / Fedora / Arch / Alpine
+        ("/usr/share/fonts/dejavu/DejaVuSans.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"),
+        ("/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf", "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf"),
+        ("/usr/share/fonts/TTF/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"),
+        ("/usr/share/fonts/liberation-sans/LiberationSans-Regular.ttf", "/usr/share/fonts/liberation-sans/LiberationSans-Bold.ttf"),
+        # macOS
+        ("/Library/Fonts/Arial.ttf", "/Library/Fonts/Arial Bold.ttf"),
+        ("/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial Bold.ttf"),
+    ]
+
+    mono_candidates = [
+        # Windows
+        (os.path.join(win_fonts, "consola.ttf"), os.path.join(win_fonts, "consolab.ttf")),
+        (os.path.join(win_fonts, "cour.ttf"), os.path.join(win_fonts, "courbd.ttf")),
+        ("C:/Windows/Fonts/consola.ttf", "C:/Windows/Fonts/consolab.ttf"),
+        ("C:/Windows/Fonts/cour.ttf", "C:/Windows/Fonts/courbd.ttf"),
+        # Linux
+        ("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"),
+        ("/usr/share/fonts/dejavu/DejaVuSansMono.ttf", "/usr/share/fonts/dejavu/DejaVuSansMono-Bold.ttf"),
+        ("/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf", "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf"),
+        ("/usr/share/fonts/truetype/liberation2/LiberationMono-Regular.ttf", "/usr/share/fonts/truetype/liberation2/LiberationMono-Bold.ttf"),
+        ("/usr/share/fonts/truetype/freefont/FreeMono.ttf", "/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf"),
+        # macOS
+        ("/Library/Fonts/Courier New.ttf", "/Library/Fonts/Courier New Bold.ttf"),
+    ]
+
+    chosen_sans_reg, chosen_sans_bold = None, None
+    for reg, bold in sans_candidates:
+        if os.path.isfile(reg):
+            chosen_sans_reg = reg
+            chosen_sans_bold = bold if os.path.isfile(bold) else reg
+            break
+
+    if not chosen_sans_reg:
+        search_dirs = [
+            "/usr/share/fonts", "/usr/local/share/fonts",
+            os.path.expanduser("~/.fonts"), os.path.expanduser("~/.local/share/fonts"),
+            win_fonts, "C:/Windows/Fonts", "/Library/Fonts"
+        ]
+        for sdir in search_dirs:
+            if not os.path.isdir(sdir):
+                continue
+            for root, _, files in os.walk(sdir):
+                for f in files:
+                    lf = f.lower()
+                    if lf.endswith(".ttf") and any(k in lf for k in ("sans", "dejavu", "liberation", "arial", "noto", "ubuntu")):
+                        chosen_sans_reg = os.path.join(root, f)
+                        chosen_sans_bold = chosen_sans_reg
+                        break
+                if chosen_sans_reg:
+                    break
+            if chosen_sans_reg:
+                break
+
+    chosen_mono_reg, chosen_mono_bold = None, None
+    for reg, bold in mono_candidates:
+        if os.path.isfile(reg):
+            chosen_mono_reg = reg
+            chosen_mono_bold = bold if os.path.isfile(bold) else reg
+            break
+
+    if chosen_sans_reg:
+        fn_normal = "CyrillicSans"
+        fn_bold = "CyrillicSans-Bold"
+        registerFont(TTFont(fn_normal, chosen_sans_reg))
+        registerFont(TTFont(fn_bold, chosen_sans_bold))
+        registerFontFamily(fn_normal, normal=fn_normal, bold=fn_bold)
+        registerFontFamily(fn_bold, normal=fn_bold, bold=fn_bold)
+
+        if chosen_mono_reg:
+            fn_mono = "CyrillicMono"
+            fn_mono_bold = "CyrillicMono-Bold"
+            registerFont(TTFont(fn_mono, chosen_mono_reg))
+            registerFont(TTFont(fn_mono_bold, chosen_mono_bold))
+            registerFontFamily(fn_mono, normal=fn_mono, bold=fn_mono_bold)
+            registerFontFamily(fn_mono_bold, normal=fn_mono_bold, bold=fn_mono_bold)
+        else:
+            fn_mono = fn_normal
+            fn_mono_bold = fn_bold
+
+        # Defensively alias standard PostScript fonts so any fallback/internal uses also render Cyrillic
+        for std_name, std_path in [("Helvetica", chosen_sans_reg), ("Helvetica-Bold", chosen_sans_bold)]:
+            try:
+                registerFont(TTFont(std_name, std_path))
+            except Exception:
+                pass
+        try:
+            registerFontFamily("Helvetica", normal="Helvetica", bold="Helvetica-Bold")
+        except Exception:
+            pass
+
+        mono_target = chosen_mono_reg or chosen_sans_reg
+        mono_bold_target = chosen_mono_bold or chosen_sans_bold
+        for std_name, std_path in [("Courier", mono_target), ("Courier-Bold", mono_bold_target)]:
+            try:
+                registerFont(TTFont(std_name, std_path))
+            except Exception:
+                pass
+        try:
+            registerFontFamily("Courier", normal="Courier", bold="Courier-Bold")
+        except Exception:
+            pass
+
+        return fn_normal, fn_bold, fn_mono, fn_mono_bold
+
+    print("WARNING: No Cyrillic TTF font found on system; falling back to Helvetica.", file=sys.stderr)
+    return "Helvetica", "Helvetica-Bold", "Courier", "Courier-Bold"
+
+
+FONT_NORMAL, FONT_BOLD, FONT_MONO, FONT_MONO_BOLD = setup_cyrillic_fonts()
+
 
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -41,7 +180,7 @@ class NumberedCanvas(canvas.Canvas):
         self.rect(0, 0, SLIDE_WIDTH, 30, fill=True, stroke=False)
 
         # Footer text
-        self.setFont("Helvetica", 9)
+        self.setFont(FONT_NORMAL, 9)
         self.setFillColor(colors.HexColor("#94a3b8"))
         self.drawString(36, 11, "Цифровой рудник «Актогай» (KAZ Minerals) | Team AURA (team-077) | OpenEgiz Contest 2026")
         self.drawRightString(SLIDE_WIDTH - 36, 11, f"Слайд {self._pageNumber} из {total_pages}")
@@ -59,12 +198,13 @@ def build_presentation(out_path: str):
     )
 
     styles = getSampleStyleSheet()
+    styles["Normal"].fontName = FONT_NORMAL
 
     # Custom styles
     title_style = ParagraphStyle(
         "CoverTitle",
         parent=styles["Normal"],
-        fontName="Helvetica-Bold",
+        fontName=FONT_BOLD,
         fontSize=30,
         leading=36,
         textColor=colors.HexColor("#0f172a"),
@@ -74,7 +214,7 @@ def build_presentation(out_path: str):
     subtitle_style = ParagraphStyle(
         "CoverSubtitle",
         parent=styles["Normal"],
-        fontName="Helvetica",
+        fontName=FONT_NORMAL,
         fontSize=15,
         leading=20,
         textColor=colors.HexColor("#0284c7"),
@@ -84,7 +224,7 @@ def build_presentation(out_path: str):
     slide_header_style = ParagraphStyle(
         "SlideHeader",
         parent=styles["Normal"],
-        fontName="Helvetica-Bold",
+        fontName=FONT_BOLD,
         fontSize=20,
         leading=24,
         textColor=colors.HexColor("#0f172a"),
@@ -93,7 +233,7 @@ def build_presentation(out_path: str):
     body_style = ParagraphStyle(
         "BodyDark",
         parent=styles["Normal"],
-        fontName="Helvetica",
+        fontName=FONT_NORMAL,
         fontSize=11,
         leading=16,
         textColor=colors.HexColor("#334155"),
@@ -102,7 +242,7 @@ def build_presentation(out_path: str):
     bold_body = ParagraphStyle(
         "BoldBodyDark",
         parent=styles["Normal"],
-        fontName="Helvetica-Bold",
+        fontName=FONT_BOLD,
         fontSize=11,
         leading=16,
         textColor=colors.HexColor("#0f172a"),
@@ -111,7 +251,7 @@ def build_presentation(out_path: str):
     bullet_style = ParagraphStyle(
         "BulletItem",
         parent=styles["Normal"],
-        fontName="Helvetica",
+        fontName=FONT_NORMAL,
         fontSize=10,
         leading=15,
         textColor=colors.HexColor("#334155"),
@@ -121,7 +261,7 @@ def build_presentation(out_path: str):
     code_box_style = ParagraphStyle(
         "CodeBox",
         parent=styles["Normal"],
-        fontName="Courier",
+        fontName=FONT_MONO,
         fontSize=9,
         leading=12,
         textColor=colors.HexColor("#0284c7"),
@@ -193,7 +333,7 @@ def build_presentation(out_path: str):
     # --- SLIDE 4: АРХИТЕКТУРА И ДВОЙНИКИ DITTO ---
     story.append(Paragraph("3. Архитектура решения и модель данных OpenEgiz", slide_header_style))
     story.append(Paragraph("100% соответствие эталонному пайплайну платформы OpenEgiz:", bold_body))
-    story.append(Paragraph("<b>Скрипт симулятора</b> ──(MQTT modify)──▶ <b>Eclipse Ditto</b> ──(MQTT opentwins)──▶ <b>Telegraf</b> ──▶ <b>InfluxDB</b> ──▶ <b>Grafana</b>", code_box_style))
+    story.append(Paragraph("<b>Скрипт симулятора</b> ──(MQTT modify)──→ <b>Eclipse Ditto</b> ──(MQTT opentwins)──→ <b>Telegraf</b> ──→ <b>InfluxDB</b> ──→ <b>Grafana</b>", code_box_style))
     story.append(Spacer(1, 6))
 
     story.append(Paragraph("<b>Иерархия цифровых двойников (Namespace: org.openegiz.aktogay):</b>", bold_body))
