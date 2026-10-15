@@ -22,6 +22,7 @@ import http.server
 import json
 import logging
 import math
+import mimetypes
 import os
 import random
 import signal
@@ -36,6 +37,8 @@ except ImportError:
 
 NAMESPACE = "org.openegiz.aktogay"
 TOPIC_PREFIX = "telemetry"
+WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -459,6 +462,9 @@ class WhatIfHandler(http.server.BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self._send_json(200, {"status": "ok"})
 
+    def do_HEAD(self):
+        self.do_GET()
+
     def _handle_whatif(self, path: str):
         if path == "/api/whatif/ex1-fail":
             self.pit.trigger_ex1_failure(True)
@@ -474,6 +480,30 @@ class WhatIfHandler(http.server.BaseHTTPRequestHandler):
             self._send_json(200, {"scenario": "all", "status": "reset", "message": "All What-If scenarios reset to baseline operational conditions."})
         else:
             self._send_json(404, {"error": "unknown scenario endpoint"})
+
+    def _serve_static(self, rel_path: str):
+        if rel_path in ("", "/", "/index.html"):
+            rel_path = "index.html"
+        clean_rel = rel_path.lstrip("/").split("?")[0]
+        full_path = os.path.normpath(os.path.join(WEB_DIR, clean_rel))
+        if not full_path.startswith(WEB_DIR) or not os.path.isfile(full_path):
+            self._send_json(404, {"error": f"file {clean_rel} not found"})
+            return
+
+        ctype, _ = mimetypes.guess_type(full_path)
+        if not ctype:
+            ctype = "application/octet-stream"
+        try:
+            with open(full_path, "rb") as f:
+                content = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(content)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(content)
+        except Exception as exc:
+            self._send_json(500, {"error": str(exc)})
 
     def do_GET(self):
         if self.path == "/api/state":
@@ -491,7 +521,7 @@ class WhatIfHandler(http.server.BaseHTTPRequestHandler):
         elif self.path.startswith("/api/whatif/"):
             self._handle_whatif(self.path)
         else:
-            self._send_json(404, {"error": "endpoint not found"})
+            self._serve_static(self.path)
 
     def do_POST(self):
         if self.path.startswith("/api/whatif/"):

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Цифровой двойник карьера «Актогай» | Team AURA (OpenEgiz)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      background-color: #0b0f17;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #viewport {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    /* Top Bar */
+    header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.6) 100%);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 10;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-badge {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.5);
+    }
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: 0.3px;
+    }
+    .brand-subtitle {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .top-stats {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 13px;
+    }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Left Sidebar: Telemetry & Quality Blending */
+    .hud-left {
+      position: absolute;
+      top: 72px;
+      left: 20px;
+      width: 330px;
+      max-height: calc(100vh - 140px);
+      overflow-y: auto;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .panel {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .panel-header {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #38bdf8;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .grade-display {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .grade-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #38bdf8;
+      line-height: 1.1;
+    }
+    .grade-target {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .target-bar-bg {
+      height: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      margin-top: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .target-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #38bdf8);
+      border-radius: 4px;
+      width: 60%;
+      transition: width 0.4s ease;
+    }
+    .target-band-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 45%;
+      width: 15%;
+      background: rgba(56, 189, 248, 0.35);
+      border-left: 1px dashed #38bdf8;
+      border-right: 1px dashed #38bdf8;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+    }
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+    .stat-label {
+      color: #94a3b8;
+    }
+    .stat-val {
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+
+    /* Fleet Cards */
+    .truck-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .truck-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .truck-item:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+    .truck-state-badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .state-hauling { background: rgba(56, 189, 248, 0.25); color: #38bdf8; }
+    .state-loading { background: rgba(245, 158, 11, 0.25); color: #fbbf24; }
+    .state-dumping { background: rgba(168, 85, 247, 0.25); color: #c084fc; }
+    .state-returning { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+
+    /* Right Sidebar: What-If Scenarios Control Center */
+    .hud-right {
+      position: absolute;
+      top: 72px;
+      right: 20px;
+      width: 320px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .whatif-btn {
+      width: 100%;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #f1f5f9;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.25s ease;
+      margin-bottom: 8px;
+    }
+    .whatif-btn:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: rgba(56, 189, 248, 0.5);
+      transform: translateY(-1px);
+    }
+    .whatif-btn.active {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #fca5a5;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+    }
+    .whatif-btn.reset-btn {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+      text-align: center;
+      justify-content: center;
+    }
+    .whatif-btn.reset-btn:hover {
+      background: rgba(16, 185, 129, 0.35);
+      border-color: #10b981;
+    }
+
+    .log-box {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      padding: 8px 10px;
+      max-height: 140px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 4px;
+    }
+    .log-item {
+      line-height: 1.3;
+    }
+    .log-item.alert {
+      color: #f87171;
+    }
+    .log-item.success {
+      color: #34d399;
+    }
+
+    /* Bottom Control Bar */
+    footer {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 30px;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .cam-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #94a3b8;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .cam-btn:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .cam-btn.active {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+  </style>
+  <script src="/vendor/three.min.js"></script>
+  <script src="/vendor/OrbitControls.js"></script>
+</head>
+<body>
+  <!-- Top Navigation -->
+  <header>
+    <div class="brand">
+      <span class="logo-badge">TEAM AURA</span>
+      <div>
+        <div class="brand-title">Цифровой рудник «Актогай» (KAZ Minerals)</div>
+        <div class="brand-subtitle">Eclipse Ditto Twin • MQTT Ingest • Three.js 3D Engine</div>
+      </div>
+    </div>
+    <div class="top-stats">
+      <div>Сим. время: <strong id="sim-time" style="color: #38bdf8;">0.0 мин</strong></div>
+      <div>Режим: <strong style="color: #cbd5e1;">Шихтовка руды (0.48% Cu)</strong></div>
+      <div class="status-pill">
+        <div class="pulse-dot"></div>
+        <span>OPEN-EGIZ LIVE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 3D Canvas -->
+  <canvas id="viewport"></canvas>
+
+  <!-- Left HUD Panel: Metallurgy & Telemetry -->
+  <aside class="hud-left">
+    <div class="panel">
+      <div class="panel-header">
+        <span>Качество руды на дробилке</span>
+        <span style="color: #10b981; font-size: 11px;">ШИХТОВКА АКТИВНА</span>
+      </div>
+      <div class="grade-display">
+        <div class="grade-value" id="val-feed-grade">0.480 %</div>
+        <div class="grade-target">Цель: 0.48% Cu (диапазон: 0.44% – 0.52%)</div>
+        <div class="target-bar-bg">
+          <div class="target-band-marker"></div>
+          <div class="target-bar-fill" id="grade-bar" style="width: 50%;"></div>
+        </div>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Добыча за смену:</span>
+        <span class="stat-val" id="val-tonnes-mined">0 т</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Производительность дробилки:</span>
+        <span class="stat-val" id="val-crusher-tph">0 т/ч</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Расход дизеля (парк):</span>
+        <span class="stat-val" id="val-fuel-rate">0 л/ч</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Состояние откосов (Радар):</span>
+        <span class="stat-val" style="color: #34d399;" id="val-radar-status">Стабильно (&lt; 0.4 мм)</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>Парк самосвалов CAT 793F</span>
+        <span id="truck-count" style="color: #94a3b8; font-size: 11px;">5 ед.</span>
+      </div>
+      <div class="truck-list" id="truck-list">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right HUD Panel: What-If Simulator Dispatcher -->
+  <aside class="hud-right">
+    <div class="panel">
+      <div class="panel-header">
+        <span>Пульт диспетчера: Сценарии «Что-Если»</span>
+      </div>
+      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px; line-height: 1.4;">
+        Запуск непредвиденных инцидентов для оценки адаптивной реакции цифрового двойника:
+      </p>
+
+      <button class="whatif-btn" id="btn-ex1" onclick="toggleWhatIf('ex1-fail')">
+        <span>🚨</span>
+        <div>
+          <div>Авария экскаватора EX-01</div>
+          <small style="color: #94a3b8; font-size: 10px;">Остановка богатой руды (0.64% Cu)</small>
+        </div>
+      </button>
+
+      <button class="whatif-btn" id="btn-road" onclick="toggleWhatIf('road-block')">
+        <span>⚠️</span>
+        <div>
+          <div>Оползень рампы +240м</div>
+          <small style="color: #94a3b8; font-size: 10px;">Объезд по резервной трассе (+1.4 км)</small>
+        </div>
+      </button>
+
+      <button class="whatif-btn" id="btn-dilution" onclick="toggleWhatIf('dilution')">
+        <span>📉</span>
+        <div>
+          <div>Разубоживание в забое EX-02</div>
+          <small style="color: #94a3b8; font-size: 10px;">Снижение до 0.22% Cu (адаптация шихты)</small>
+        </div>
+      </button>
+
+      <button class="whatif-btn reset-btn" onclick="resetWhatIf()">
+        <span>🔄 Сбросить сценарии в норму</span>
+      </button>
+
+      <div class="panel-header" style="margin-top: 14px; margin-bottom: 6px;">
+        <span>Журнал диспетчера</span>
+      </div>
+      <div class="log-box" id="dispatch-log">
+        <div class="log-item success">[00:00] Система шихтовки руды инициализирована. Целевое содержание Cu: 0.48%.</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Camera Navigation Bar -->
+  <footer>
+    <button class="cam-btn active" onclick="setCameraView('orbit')">🌐 Обзор карьера</button>
+    <button class="cam-btn" onclick="setCameraView('crusher')">🏭 Дробилка</button>
+    <button class="cam-btn" onclick="setCameraView('ex1')">⛏️ Забой EX-01 (+280м)</button>
+    <button class="cam-btn" onclick="setCameraView('ex2')">⛏️ Забой EX-02 (+220м)</button>
+    <button class="cam-btn" onclick="setCameraView('truck-01')">🚛 Самосвал 01</button>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
