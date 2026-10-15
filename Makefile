@@ -1,4 +1,4 @@
-.PHONY: up down ps logs smoke clean example-mine example-mine-stop install uninstall status endpoints upgrade upload-build generate-data copy-build unity-demo check-secrets check-public-host
+.PHONY: up down ps logs smoke clean aktogay aktogay-stop example-mine example-mine-stop install uninstall status endpoints upgrade upload-build generate-data copy-build unity-demo check-secrets check-public-host
 
 # ---------------------------------------------------------------------------
 # Docker Compose deployment (laptops, CI, contest judges): deploy/compose/
@@ -9,7 +9,9 @@ COMPOSE_BASE := docker compose -f deploy/compose/docker-compose.yml
 # `make clean` forgets it.
 MINE_MARKER  := deploy/compose/.example-mine
 MINE_COMPOSE := examples/mine/compose.yml
-COMPOSE := $(COMPOSE_BASE)$(if $(wildcard $(MINE_MARKER)), -f $(MINE_COMPOSE))
+AKTOGAY_MARKER  := deploy/compose/.aktogay
+AKTOGAY_COMPOSE := team/compose.yml
+COMPOSE := $(COMPOSE_BASE)$(if $(wildcard $(MINE_MARKER)), -f $(MINE_COMPOSE))$(if $(wildcard $(AKTOGAY_MARKER)), -f $(AKTOGAY_COMPOSE))
 
 ## Start the whole platform with Docker Compose (first run: generates credentials)
 up:
@@ -39,6 +41,24 @@ logs:
 smoke:
 	@bash scripts/compose-smoke.sh
 
+aktogay-start: aktogay
+
+## Run Team AURA's Aktogay Digital Mine (twins + physics sim + 3D Three.js + What-If REST + Grafana)
+aktogay: up
+	$(COMPOSE_BASE) -f $(AKTOGAY_COMPOSE) up -d --build --wait --wait-timeout 300
+	@touch $(AKTOGAY_MARKER)
+	@echo ""
+	@echo "================================================================================"
+	@echo "  Aktogay Digital Mine (Team AURA) is UP and RUNNING!"
+	@echo "  - 3D WebGL Spatial Twin:  http://localhost:5000"
+	@echo "  - What-If Dispatch API:   http://localhost:5000/api/whatif/{scenario}"
+	@echo "  - Grafana Dashboard:      http://localhost:3000 (OpenEgiz Examples -> Aktogay)"
+	@echo "================================================================================"
+
+## Stop the Aktogay simulator (twins and data stay)
+aktogay-stop:
+	$(COMPOSE_BASE) -f $(AKTOGAY_COMPOSE) stop aktogay-simulator
+
 ## Run the Example Mine (twins + haul-cycle simulator + Grafana dashboard) on the compose stack
 example-mine: up
 	$(COMPOSE_BASE) -f $(MINE_COMPOSE) up -d --build --wait --wait-timeout 300
@@ -52,7 +72,7 @@ example-mine-stop:
 ## Stop the platform and DELETE all its data and credentials
 clean:
 	$(COMPOSE) down -v --remove-orphans
-	rm -f deploy/compose/.env $(MINE_MARKER)
+	rm -f deploy/compose/.env $(MINE_MARKER) $(AKTOGAY_MARKER)
 
 # ---------------------------------------------------------------------------
 # Helm deployment (servers): the chart at the repository root

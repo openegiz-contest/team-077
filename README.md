@@ -19,8 +19,10 @@ make aktogay-start
 ```
 
 После запуска:
-- **Интерактивная 3D-визуализация карьера с пультом What-If:** `http://localhost:8080/3d/`
-- **Дашборды управления и аналитики в Grafana:** `http://localhost:3000` (логин и сгенерированный пароль печатаются при выполнении `make up`).
+- **Интерактивная 3D-визуализация карьера с пультом What-If:** `http://localhost:5000`
+- **Дашборды управления и аналитики в Grafana:** `http://localhost:3000` (логин и сгенерированный пароль печатаются при выполнении `make up`; путь: *Dashboards → OpenEgiz Examples → Цифровой рудник «Актогай» (Team AURA)*).
+- **REST API сценариев «Что-Если»:** `http://localhost:5000/api/whatif/{ex1-fail|road-block|dilution|reset}`
+- **Текущее состояние и телеметрия в JSON:** `http://localhost:5000/api/state`
 
 ---
 

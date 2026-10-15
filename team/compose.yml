@@ -1,0 +1,36 @@
+# Aktogay Digital Mine (Team AURA): an overlay on deploy/compose/docker-compose.yml.
+# Started by `make aktogay` or `make aktogay-start` from the repository root.
+
+services:
+  aktogay-setup:
+    build: ../../team
+    image: openegiz/aktogay-mine:local
+    restart: "no"
+    command: ["python", "setup_twins.py"]
+    environment:
+      DITTO_URL: http://ditto-nginx:80
+      DITTO_PASSWORD: ${DITTO_PASSWORD}
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  aktogay-simulator:
+    image: openegiz/aktogay-mine:local
+    pull_policy: never
+    restart: unless-stopped
+    mem_limit: 256m
+    ports:
+      - "${OPENEGIZ_BIND:-127.0.0.1}:${AKTOGAY_WEB_PORT:-5000}:5000"
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
+      SIM_SPEEDUP: ${SIM_SPEEDUP:-5}
+      SIM_INTERVAL: ${SIM_INTERVAL:-1.0}
+      API_PORT: "5000"
+    depends_on:
+      aktogay-setup:
+        condition: service_completed_successfully
+
+  grafana:
+    volumes:
+      - ../../team/dashboard.json:/var/lib/grafana/example-dashboards/aktogay-mine.json:ro

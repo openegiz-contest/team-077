@@ -1,0 +1,295 @@
+{
+  "uid": "openegiz-aktogay-mine",
+  "title": "Цифровой рудник «Актогай» (Team AURA)",
+  "tags": [
+    "openegiz",
+    "aktogay",
+    "mine",
+    "blending",
+    "what-if"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "description": "Цифровой двойник карьера Актогай (KAZ Minerals) команды AURA (team-077). Динамическая диспетчеризация, шихтовка руды 0.48% Cu и What-If сценарии.",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Качество руды на дробилке (% Cu)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "opentwins-influxdb"
+      },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 3,
+          "min": 0.2,
+          "max": 0.8,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#f87171", "value": null },
+              { "color": "#fbbf24", "value": 0.40 },
+              { "color": "#10b981", "value": 0.44 },
+              { "color": "#fbbf24", "value": 0.52 },
+              { "color": "#f87171", "value": 0.56 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "opentwins-influxdb" },
+          "query": "from(bucket: \"default\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.thingId == \"org.openegiz.aktogay:crusher-01\" and r._field == \"value_feed_grade_properties_value\")\n  |> keep(columns: [\"_time\", \"_value\"])"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Добыча руды за смену (т)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "opentwins-influxdb"
+      },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "masst",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "#38bdf8" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "opentwins-influxdb" },
+          "query": "from(bucket: \"default\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.thingId == \"org.openegiz.aktogay:mine-01\" and r._field == \"value_tonnes_mined_properties_value\")\n  |> keep(columns: [\"_time\", \"_value\"])"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Производительность дробилки (т/ч)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "opentwins-influxdb"
+      },
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "masst",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "#f59e0b" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "opentwins-influxdb" },
+          "query": "from(bucket: \"default\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.thingId == \"org.openegiz.aktogay:crusher-01\" and r._field == \"value_throughput_properties_value\")\n  |> keep(columns: [\"_time\", \"_value\"])"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Расход дизеля парка (л)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "opentwins-influxdb"
+      },
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "volumeL",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "#a855f7" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "opentwins-influxdb" },
+          "query": "from(bucket: \"default\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.thingId == \"org.openegiz.aktogay:mine-01\" and r._field == \"value_fuel_consumed_total_properties_value\")\n  |> keep(columns: [\"_time\", \"_value\"])"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Динамика содержания Cu на дробилке (Цель: 0.48 ± 0.04% Cu)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "opentwins-influxdb"
+      },
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 15
+          },
+          "unit": "percent",
+          "decimals": 3,
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#f87171", "value": null },
+              { "color": "#10b981", "value": 0.44 },
+              { "color": "#f87171", "value": 0.52 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "FeedGrade",
+          "datasource": { "type": "influxdb", "uid": "opentwins-influxdb" },
+          "query": "from(bucket: \"default\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.thingId == \"org.openegiz.aktogay:crusher-01\" and r._field == \"value_feed_grade_properties_value\")\n  |> keep(columns: [\"_time\", \"_value\"])"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Скорости самосвалов CAT 793F (км/ч)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "opentwins-influxdb"
+      },
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "unit": "velocitykmh",
+          "decimals": 1,
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "refId": "TruckSpeeds",
+          "datasource": { "type": "influxdb", "uid": "opentwins-influxdb" },
+          "query": "from(bucket: \"default\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.thingId =~ /^org\\.openegiz\\.aktogay:truck-0[1-5]$/ and r._field == \"value_speed_properties_value\")\n  |> keep(columns: [\"_time\", \"_value\", \"thingId\"])"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Радар устойчивости бортов карьера (SSR Displacement Rate, мм/ч)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "opentwins-influxdb"
+      },
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 20
+          },
+          "unit": "lengthmm",
+          "decimals": 2,
+          "color": { "mode": "fixed", "fixedColor": "#10b981" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "refId": "RadarDisp",
+          "datasource": { "type": "influxdb", "uid": "opentwins-influxdb" },
+          "query": "from(bucket: \"default\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.thingId == \"org.openegiz.aktogay:slope-radar-01\" and r._field == \"value_displacement_rate_mm_properties_value\")\n  |> keep(columns: [\"_time\", \"_value\"])"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Расход топлива по машинам (л/ч)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "opentwins-influxdb"
+      },
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 6 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2
+          },
+          "unit": "L/h",
+          "decimals": 1,
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "refId": "FuelRate",
+          "datasource": { "type": "influxdb", "uid": "opentwins-influxdb" },
+          "query": "from(bucket: \"default\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.thingId =~ /^org\\.openegiz\\.aktogay:truck-0[1-5]$/ and r._field == \"value_fuel_rate_properties_value\")\n  |> keep(columns: [\"_time\", \"_value\", \"thingId\"])"
+        }
+      ]
+    }
+  ]
+}
