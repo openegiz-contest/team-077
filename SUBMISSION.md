@@ -1,63 +1,82 @@
 # SUBMISSION
 
-<!-- Fill in every section. The AI Jury studies this file together with the code, the Build Report, the presentation and the Stand's interface. Accepted languages: English, Kazakh, Russian. These hint comments may be deleted. -->
-
 ## Concept
 
-<!-- Written by the Team before the code: your own choice, a few sentences per answer. Everything else in the Submission follows from it. -->
+**Enterprise:** Открытый медный карьер «Актогай» (KAZ Minerals, Абайская область, Казахстан) — один из крупнейших в мире карьеров по добыче меди открытым способом.
 
-**Enterprise:** <!-- Which mining enterprise, or which part of it, the twin represents. -->
+**Users:** Главный диспетчер горно-транспортного комплекса (ГТК) и начальник смены обогатительной фабрики.
 
-**Users:** <!-- Who uses the twin. -->
+**Decision:** Оперативная динамическая диспетчеризация автосамосвалов и шихтовка руды: стабилизация содержания меди в питании первичной конусной дробилки на целевом уровне 0.48% Cu (±0.04%), предотвращение очередей самосвалов под экскаваторами и минимизация удельного расхода дизельного топлива на затяжных подъемах карьерных рамп.
 
-**Decision:** <!-- Which decision the twin helps them make. -->
+**Why this choice:** Актогай — флагман горнорудной промышленности Казахстана с двумя крупными обогатительными фабриками (сульфидной и оксидной). Колебания качества руды даже на 0.05% Cu и простои тяжелых автосамосвалов приводят к потерям сотен миллионов тенге в сутки. Задача стабилизации качества на этапе погрузки и транспортировки — ключевой вызов реального горного производства.
 
-**Why this choice:** <!-- Why this enterprise, these users and this decision. -->
-
-**Real or fictional:** <!-- A real object: name it and give the sources of its numbers. A fictional one: which real objects it resembles and where its numbers come from. A real object with sourced numbers scores higher. -->
+**Real or fictional:** Реальный промышленный объект. Геометрические параметры карьера, производительность фабрик и характеристики руд взяты из официальных технических отчетов KAZ Minerals PLC и геологических обзоров USGS. Параметры парка техники соответствуют реальным паспортам машин Актогая: автосамосвалы грузоподъемностью 227 т (CAT 793F) и экскаваторы с емкостью ковша 56 м³ (CAT 7495), спецификации взяты из справочника Caterpillar Performance Handbook (ed. 49).
 
 ## Team
 
-<!-- GitHub usernames of the Participants. Other personal data are not required: the repository becomes public after the Freeze (Rules, section 15). -->
-
 | GitHub |
 |---|
-|  |
+| AURA-afk-lang |
 
 ## Mine
 
-<!-- Which part of a mining enterprise the Submission represents (open pit, underground mine, processing plant…), which objects are twins in OpenEgiz, how they are related, and where they are defined in the code. -->
+Цифровой двойник карьера «Актогай» охватывает полную технологическую цепочку добычи и первичной рудоподготовки:
+- Корневой двойник предприятия: `org.openegiz.aktogay:mine-01` (сводная суточная добыча, средневзвешенное качество Cu, общий тоннаж, энергозатраты).
+- Забои и экскаваторные комплексы (3 горизонта):
+  - `org.openegiz.aktogay:excavator-01` — Северный борт, горизонт +280м, богатая руда (0.64% Cu).
+  - `org.openegiz.aktogay:excavator-02` — Центральный забой, горизонт +220м, рядовая руда (0.40% Cu).
+  - `org.openegiz.aktogay:excavator-03` — Западный борт, горизонт +320м, вскрышные породы (пустая порода, 0.08% Cu).
+- Горно-транспортный флот (автосамосвалы CAT 793F):
+  - `org.openegiz.aktogay:truck-01` ... `truck-05` — грузоподъемность 227 т, отслеживание координат, уклона рампы, скорости, массы груза, сорта руды в кузове, расхода топлива и температуры шин TKPH.
+- Пункты разгрузки:
+  - `org.openegiz.aktogay:crusher-01` — Первичная дробилка (уровень бункера, часовая производительность т/ч, текущее содержание меди в руде).
+  - `org.openegiz.aktogay:waste-dump-01` — Отвал вскрышных пород.
+  - `org.openegiz.aktogay:stockpile-01` — Аварийный рудный склад усреднения.
+- Безопасность и мониторинг:
+  - `org.openegiz.aktogay:slope-radar-01` — Радар устойчивости бортов карьера.
+
+Определение двойников расположено в `team/twins.json` и регистрируется скриптом `team/setup_twins.py`.
 
 ## Modules and What-if Scenarios
 
-<!-- Modules: functions on top of the twin, from the Mine Map or your own. What-if Scenarios: changes of an operating condition that can be run on the Stand without changing the code (close a road, stop equipment…). Only what works on the Stand is taken into account. -->
-
 | Module or What-if Scenario | What it does | How to see it on the Stand | How to undo it (scenarios) |
 |---|---|---|---|
-|  |  |  |  |
+| **Модуль 1: Динамическая диспетчеризация (Dispatch)** | Оптимизирует рейсы самосвалов по критерию минимального ожидания и равномерной загрузки дробилки | Дашборд Grafana (панель «Fleet Cycles & Queues») и перемещение машин в 3D | Штатный режим работы алгоритма |
+| **Модуль 2: Управление качеством и шихтовка (Blending)** | Рассчитывает баланс рудопотоков с экскаваторов для поддержания 0.48% Cu на входе фабрики | График «Crusher Feed Grade (% Cu)» в Grafana и индикатор руды в 3D | Автоматический балансировщик |
+| **Модуль 3: Энергоэффективность и топливо (Energy & Fuel)** | Моделирует расход дизеля с учетом уклона (8%) и массы груза, вычисляет удельный расход л/т*км | График расхода топлива и индикаторы баков самосвалов в реальном времени | Непрерывный мониторинг |
+| **Сценарий 1: Авария экскаватора богатой руды EX-01** | Имитирует поломку EX-01. Диспетчер мгновенно перенаправляет самосвалы на EX-02 и подключает забор руды со склада усреднения | Кнопка «Trigger EX-01 Failure» в 3D HUD или `POST /api/whatif/ex1-fail`. В 3D зажигается аварийный маркер, меняются маршруты | Кнопка «Reset What-If» или `POST /api/whatif/reset` |
+| **Сценарий 2: Оползневое перекрытие рампы +240м** | Имитирует блокировку участка дороги. Алгоритм перестраивает движение на объездной серпантин (+1.2 км) | Кнопка «Trigger Road Block» в 3D HUD или `POST /api/whatif/road-block`. В 3D появляются ограждения, самосвалы едут в объезд | Кнопка «Reset What-If» или `POST /api/whatif/reset` |
+| **Сценарий 3: Резкое разубоживание в забое EX-02** | Падение качества руды в забое EX-02 до 0.22% Cu. Диспетчер увеличивает долю рейсов к EX-01 для компенсации | Кнопка «Trigger Dilution» в 3D HUD или `POST /api/whatif/dilution`. В Grafana видна стабилизация смеси дробилки | Кнопка «Reset What-If» или `POST /api/whatif/reset` |
 
 ## What works and what does not
 
-<!-- What has been verified, what is unfinished, which bugs are known. -->
+- **Работает:** Сквозная генерация телеметрии по протоколу Ditto, запись в InfluxDB через Telegraf, визуализация метрик в Grafana, процедурная 3D-сцена на Three.js с анимацией движения техники по траекториям, отработка сценариев «Что если» с мгновенным откликом на стенде.
+- **Ограничения:** Моделирование погоды и запыленности носит оценочный характер; не учитывается влияние влажности руды на просеивание.
 
 ## Data and Assumptions
 
-<!--
-- Synthetic and real data.
-- Sources of parameters: equipment data sheets, reference literature, industrial safety regulations, datasets.
-- Datasets: source, license, how they are provided (in the repository or downloaded per the README).
-Confidential data of organizations and personal data are prohibited.
--->
+- **Реальные данные:** Параметры карьера Актогай (глубина ~350м, уклоны съездов 8–10%, ширина берм 15м), производительность дробильного передела (Metso 60-89 Superior, до 8000 т/ч). Источники: KAZ Minerals Annual Reports, USGS Open-File Report 2010-1255.
+- **Параметры техники:** Самосвалы CAT 793F (эксплуатационная масса 386 т, грузоподъемность 227 т, двигатель 1976 кВт / 2650 л.с., бак 2839 л). Экскаваторы CAT 7495 (масса 1380 т, вместимость ковша 56 м³). Источник: Caterpillar Performance Handbook (ed. 49).
+- **Синтетические данные:** Стохастические флуктуации содержания меди внутри рудного тела забоя с гауссовским шумом и пространственной автокорреляцией (по законам геостатистики).
+- **Лицензии данных:** Все используемые картографические и открытые параметры имеют лицензии Public Domain / CC BY / MIT. Конфиденциальные данные предприятий не используются.
 
 ## Mine visualization
 
-<!-- Address on the Stand, dashboard or scene; what it shows. -->
+Интерактивная трехмерная WebGL-сцена доступна на Стенде по адресу:
+`http://localhost:8080/3d/` (а также интегрирована в дашборд Grafana по адресу `http://localhost:3000`).
+Визуализация демонстрирует:
+1. Процедурно сгенерированную геометрию карьера Актогай с рабочими уступами, съездами и маркировкой горизонтов.
+2. Плавное движение 5 самосвалов в реальном времени с цветовой индикацией состояния и типа перевозимой руды.
+3. Работу экскаваторов и первичного дробильного комплекса с конвейерной галереей.
+4. Интерактивную панель диспетчера с кнопками запуска и отмены сценариев «Что если».
 
 ## Limitations
 
+- Скорости движения техники программно ограничены правилами промышленной безопасности РК: не более 40 км/ч на горизонтальных участках и не более 20 км/ч на спусках.
+
 ## Presentation
 
-`presentation.pdf` in the repository root. Video (optional): <link>
+`presentation.pdf` размещена в корне репозитория.
 
 ---
 

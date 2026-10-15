@@ -1,43 +1,46 @@
-# <Team name>: a digital mine on OpenEgiz
+# AURA: Цифровой рудник «Актогай» на платформе OpenEgiz
 
-> Team Repository of the contest “Digital Mine on OpenEgiz”. **Replace the contents of this file with the instructions for your Submission.** The AI Jury runs the Submission strictly by these instructions, from scratch, in the Judge Environment. Accepted languages: English, Kazakh, Russian.
+> Цифровой двойник открытого медного карьера «Актогай» (KAZ Minerals) для открытого конкурса «Цифровой рудник на OpenEgiz».
+> Команда: **AURA** (Участник: `@AURA-afk-lang`).
 
-> **Start with the Concept**, the first section of [SUBMISSION.md](SUBMISSION.md): the Team writes it before any code. What AI agents build from this Template without a Concept is the Default Solution, published on the [contest site](https://openegiz-contest.github.io/) as the low bar: a Submission that does not go beyond it gets low levels in the Rubric. AI agents read [AGENTS.md](AGENTS.md).
+## Быстрый запуск на Стенде
 
-## Running
-
-Requirements (Docker, `make`, Windows/WSL2 setup) are in [OPENEGIZ.md](OPENEGIZ.md) / [OPENEGIZ.ru.md](OPENEGIZ.ru.md).
+Решение развертывается и запускается в изолированном судейском окружении Ubuntu 24.04 последовательным выполнением команд:
 
 ```bash
-sudo apt install -y make   # if make is missing (clean Ubuntu)
-make up            # the OpenEgiz platform
-make example-mine  # the Example Mine: twins, simulator, dashboard
+# 1. Установка утилиты make (если отсутствует в базовом образе)
+sudo apt update && sudo apt install -y make
+
+# 2. Поднятие платформы OpenEgiz (Eclipse Ditto, InfluxDB, Grafana, Mosquitto)
+make up
+
+# 3. Запуск цифрового двойника Актогай (создание вещей в Ditto, симулятор, 3D-сцена)
+make aktogay-start
 ```
 
-Replace these commands with the commands of your Submission. The Submission must start by following these instructions without manual intervention (Rules, clause 6.4); downloading datasets and models and building are also listed here.
-
-## What to open
-
-- Grafana: the address and login are printed by `make up`.
-- <where to see the mine visualization, which dashboards>
-
-## Repository contents
-
-| Path | Contents |
-|---|---|
-| `team/` | Directory for the Team's code. Using it is optional: any part may be changed, including the platform core |
-| `SUBMISSION.md` | Description of the Submission: **required** |
-| `presentation.pdf` | Presentation: **required**, in the repository root |
-| `AGENTS.md`, `CLAUDE.md` | Instructions for your AI agents (Codex, Claude Code and others read them automatically) |
-| `examples/mine/` | The Example Mine: shows how a digital mine is built on OpenEgiz. It is not a basis for the Submission |
-| `OPENEGIZ.md`, `OPENEGIZ.ru.md` | Documentation of the OpenEgiz platform v1.0.4 |
-
-The Submission is the `main` branch at the moment of the Freeze; other branches are not evaluated.
-
-## License
-
-The Submission is distributed under the MIT license, see [LICENSE](LICENSE). Copyright belongs to the Team: add the line `Copyright (c) 2026 <Team members>` to `LICENSE`.
+После запуска:
+- **Интерактивная 3D-визуализация карьера с пультом What-If:** `http://localhost:8080/3d/`
+- **Дашборды управления и аналитики в Grafana:** `http://localhost:3000` (логин и сгенерированный пароль печатаются при выполнении `make up`).
 
 ---
 
-Platform: [aleka07/openegiz](https://github.com/aleka07/openegiz). If the platform was useful to you, support the project with a star on GitHub.
+## Структура репозитория
+
+| Путь | Содержимое |
+|---|---|
+| `SUBMISSION.md` | Официальное описание решения: Замысел, Модель, Модули, Сценарии «Что если», Данные |
+| `presentation.pdf` | Презентация решения |
+| `ROADMAP.md` | Паспорт проекта и этапы разработки |
+| `team/` | Исходный код цифрового двойника Актогай (симулятор, Three.js 3D-сцена, API сценариев) |
+| `team/twins.json` | Спецификация цифровых двойников для Eclipse Ditto |
+| `team/setup_twins.py` | Скрипт инициализации иерархии вещей в Ditto |
+| `team/simulator.py` | Физический симулятор карьера с алгоритмом шихтовки руды |
+| `team/web/` | 3D WebGL сцена карьера на Three.js |
+| `OPENEGIZ.ru.md` | Документация платформы OpenEgiz v1.0.4 |
+
+---
+
+## Лицензия
+
+Код решения распространяется под лицензией MIT.
+Copyright (c) 2026 Team AURA (AURA-afk-lang).
