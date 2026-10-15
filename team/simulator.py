@@ -399,6 +399,7 @@ class AktogayPit:
                 "trucks_active": {"value": len(self.trucks), "unit": "trucks"},
                 "fuel_consumed_total": {"value": round(self.fuel_consumed_total_l, 1), "unit": "l"},
                 "energy_intensity": {"value": round(energy_intensity, 2), "unit": "l/t"},
+                "fuel_rate": {"value": round(sum(t.fuel_rate_lph for t in self.trucks), 1), "unit": "l/h"},
                 "current_feed_grade": {"value": round(self.crusher_current_feed_grade, 3), "unit": "% Cu"},
             },
             "crusher-01": {

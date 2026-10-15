@@ -229,7 +229,7 @@
     {
       "id": 7,
       "type": "timeseries",
-      "title": "Радар устойчивости бортов карьера (SSR Displacement Rate, мм/ч)",
+      "title": "Радар устойчивости бортов карьера (SSR Displacement Rate, мм/сут)",
       "datasource": {
         "type": "influxdb",
         "uid": "opentwins-influxdb"
@@ -255,7 +255,7 @@
         {
           "refId": "RadarDisp",
           "datasource": { "type": "influxdb", "uid": "opentwins-influxdb" },
-          "query": "from(bucket: \"default\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.thingId == \"org.openegiz.aktogay:slope-radar-01\" and r._field == \"value_displacement_rate_mm_properties_value\")\n  |> keep(columns: [\"_time\", \"_value\"])"
+          "query": "from(bucket: \"default\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.thingId == \"org.openegiz.aktogay:slope-radar-01\" and r._field == \"value_displacement_rate_mm_day_properties_value\")\n  |> keep(columns: [\"_time\", \"_value\"])"
         }
       ]
     },

@@ -15,6 +15,7 @@
       "trucks_active": {"properties": {"value": 5, "unit": "trucks"}},
       "fuel_consumed_total": {"properties": {"value": 0.0, "unit": "l"}},
       "energy_intensity": {"properties": {"value": 0.0, "unit": "l/t"}},
+      "fuel_rate": {"properties": {"value": 0.0, "unit": "l/h"}},
       "current_feed_grade": {"properties": {"value": 0.48, "unit": "% Cu"}}
     }
   },

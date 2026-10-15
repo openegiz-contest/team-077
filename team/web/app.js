@@ -412,14 +412,28 @@ function updateUI(data) {
   if (mine.tonnes_mined) {
     document.getElementById("val-tonnes-mined").innerText = `${Math.round(mine.tonnes_mined.value).toLocaleString()} т`;
   }
-  if (mine.fuel_rate) {
-    document.getElementById("val-fuel-rate").innerText = `${Math.round(mine.fuel_rate.value)} л/ч`;
+  // Total Fleet Fuel Rate
+  let totalFuelRate = 0;
+  if (mine.fuel_rate && mine.fuel_rate.value !== undefined) {
+    totalFuelRate = mine.fuel_rate.value;
+  } else {
+    for (let i = 1; i <= 5; i++) {
+      const t = twins[`truck-0${i}`];
+      if (t && t.fuel_rate && t.fuel_rate.value !== undefined) {
+        totalFuelRate += t.fuel_rate.value;
+      }
+    }
+  }
+  const fuelRateEl = document.getElementById("val-fuel-rate");
+  if (fuelRateEl) {
+    fuelRateEl.innerText = `${Math.round(totalFuelRate)} л/ч`;
   }
 
   // Radar status
   const radar = twins["slope-radar-01"] || {};
   if (radar.status) {
-    const disp = radar.displacement_rate_mm ? `${radar.displacement_rate_mm.value.toFixed(2)} мм/ч` : "0.3 мм/ч";
+    const dispVal = radar.displacement_rate_mm_day || radar.displacement_rate_mm;
+    const disp = dispVal ? `${dispVal.value.toFixed(2)} мм/сут` : "0.20 мм/сут";
     document.getElementById("val-radar-status").innerText = `${radar.status.value.toUpperCase()} (${disp})`;
   }
 
