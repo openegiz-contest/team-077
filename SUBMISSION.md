@@ -14,9 +14,9 @@
 
 ## Team
 
-| GitHub |
-|---|
-| AURA-afk-lang |
+| GitHub | Participant & Contacts |
+|---|---|
+| [`@AURA-afk-lang`](https://github.com/AURA-afk-lang) | **Daulet Shamyran**<br>• 3rd-year IT student, Dept. of Cryptography and Information Security, Group SIB 24-05<br>• Telegram: [@w_qawqw](https://t.me/w_qawqw)<br>• Phone / WhatsApp: [+7 771 238 41 35](https://wa.me/77712384135)<br>• Email: [shamyrandaulett@gmail.com](mailto:shamyrandaulett@gmail.com) |
 
 ## Mine
 
@@ -80,4 +80,6 @@
 
 ---
 
-Platform: OpenEgiz v1.0.4.
+Platform: OpenEgiz v1.0.4.  
+Created by Daulet Shamyran (3rd-year IT student, Dept. of Cryptography and Information Security, Group SIB 24-05).
+

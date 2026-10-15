@@ -427,8 +427,8 @@ def build_presentation(out_path: str):
     meta_table = Table([
         [Paragraph("<b>Объект:</b> Медный карьер «Актогай» (KAZ Minerals)", body_style),
          Paragraph("<b>Платформа:</b> OpenEgiz v1.0.4 (Ditto, MQTT, InfluxDB)", body_style)],
-        [Paragraph("<b>Команда:</b> AURA (участник: AURA-afk-lang)", body_style),
-         Paragraph("<b>Номинация:</b> Соло (1-е место)", body_style)],
+        [Paragraph("<b>Автор:</b> Даулет Шамыран (3 курс, гр. СИБ 24-05)", body_style),
+         Paragraph("<b>Контакты:</b> Telegram @w_qawqw | +7 771 238 41 35", body_style)],
     ], colWidths=[360, 350])
     meta_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),

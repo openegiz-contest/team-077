@@ -42,7 +42,19 @@ make aktogay-start
 
 ---
 
+## Контакты / Contacts
+
+- **Автор / Участник:** Даулет Шамыран (Daulet Shamyran)
+- **Студент:** 3 курс, Кафедра криптографии и информационной безопасности (группа СИБ 24-05)
+- **GitHub:** [`@AURA-afk-lang`](https://github.com/AURA-afk-lang)
+- **Telegram:** [@w_qawqw](https://t.me/w_qawqw)
+- **Телефон / WhatsApp:** [+7 771 238 41 35](https://wa.me/77712384135)
+- **Email:** [shamyrandaulett@gmail.com](mailto:shamyrandaulett@gmail.com)
+
+---
+
 ## Лицензия
 
-Код решения распространяется под лицензией MIT.
-Copyright (c) 2026 Team AURA (AURA-afk-lang).
+Код решения распространяется под лицензией MIT.  
+Copyright (c) 2026 Team AURA (AURA-afk-lang).  
+Created by Daulet Shamyran (3rd-year IT student, Dept. of Cryptography and Information Security, Group SIB 24-05).
