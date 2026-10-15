@@ -400,6 +400,20 @@ def build_presentation(out_path: str):
         borderPadding=6,
         spaceAfter=8,
     )
+    formula_box_style = ParagraphStyle(
+        "FormulaBox",
+        parent=styles["Normal"],
+        fontName=FONT_NORMAL,
+        fontSize=12,
+        leading=16,
+        textColor=colors.HexColor("#0369a1"),
+        backColor=colors.HexColor("#f0f9ff"),
+        borderColor=colors.HexColor("#bae6fd"),
+        borderWidth=1,
+        borderPadding=8,
+        spaceAfter=8,
+    )
+
 
     story = []
 
@@ -488,7 +502,7 @@ def build_presentation(out_path: str):
     story.append(Paragraph("Симулятор <code>team/simulator.py</code> реализует уравнения тяговой динамики и расхода энергии:", bold_body))
 
     story.append(Paragraph("<b>1. Сопротивление движению на карьерных уклонах:</b>", bold_body))
-    story.append(Paragraph("Суммарное сопротивление $R = w_r + i$, где $w_r = 2.0\\%$ — сопротивление качению технологических дорог, $i = 8.0\\%$ — продольный уклон спиральной карьерной рампы (суммарно $10.0\\%$ сопротивления).", body_style))
+    story.append(Paragraph("Суммарное сопротивление: <b><i>R</i> = <i>w</i><sub>r</sub> + <i>i</i></b>, где <b><i>w</i><sub>r</sub> = 2.0%</b> — сопротивление качению технологических дорог, <b><i>i</i> = 8.0%</b> — продольный уклон спиральной карьерной рампы (суммарно <b>10.0%</b> общего сопротивления).", body_style))
     story.append(Paragraph("• Скорость груженого CAT 793F на подъем 8%: <b>14.5 км/ч</b> (мощность двигателя 1976 кВт).", bullet_style))
     story.append(Paragraph("• Скорость порожнего самосвала на спуск: <b>38.0 км/ч</b> (ограничение гидродинамического ретардера).", bullet_style))
     story.append(Paragraph("• Горизонтальные участки: 32 км/ч с грузом, 45 км/ч порожний.", bullet_style))
@@ -505,17 +519,17 @@ def build_presentation(out_path: str):
 
     # --- SLIDE 6: АЛГОРИТМ ШИХТОВКИ ---
     story.append(Paragraph("5. Алгоритм динамической шихтовки (Quality Blending)", slide_header_style))
-    story.append(Paragraph("Стабилизация содержания меди $C_{feed}$ в дробилке при подаче руды с разносортных забоев:", bold_body))
+    story.append(Paragraph("Стабилизация содержания меди <b><i>C</i><sub>feed</sub></b> в дробилке при подаче руды с разносортных забоев:", bold_body))
 
-    story.append(Paragraph("$$C_{feed} = \\frac{\\sum_{i} (M_i \\cdot c_i)}{\\sum_{i} M_i}$$", code_box_style))
-    story.append(Paragraph("где $M_i$ — масса руды из партии $i$, $c_i$ — содержание Cu в партии.", body_style))
+    story.append(Paragraph("<b><i>C</i><sub>feed</sub> = ∑ (<i>M<sub>i</sub></i> · <i>c<sub>i</sub></i>) / ∑ <i>M<sub>i</sub></i></b>", formula_box_style))
+    story.append(Paragraph("где <b><i>M<sub>i</sub></i></b> — масса руды из партии <i>i</i>, <b><i>c<sub>i</sub></i></b> — содержание Cu в партии.", body_style))
     story.append(Spacer(1, 6))
 
     story.append(Paragraph("<b>Логика адаптивного диспетчера:</b>", bold_body))
     story.append(Paragraph("1. Забой EX-01 дает богатую руду (0.64% Cu), забой EX-02 — рядовую (0.40% Cu). Цель смеси: <b>0.48% Cu</b>.", bullet_style))
     story.append(Paragraph("2. Диспетчер непрерывно отслеживает скользящее среднее содержания меди в бункере дробилки.", bullet_style))
-    story.append(Paragraph("3. Если $C_{feed} < 0.46\\%$, освободившийся самосвал направляется к забою богатой руды EX-01.", bullet_style))
-    story.append(Paragraph("4. Если $C_{feed} > 0.50\\%$, самосвал направляется к рядовому забою EX-02.", bullet_style))
+    story.append(Paragraph("3. Если <b><i>C</i><sub>feed</sub> &lt; 0.46%</b>, освободившийся самосвал направляется к забою богатой руды EX-01.", bullet_style))
+    story.append(Paragraph("4. Если <b><i>C</i><sub>feed</sub> &gt; 0.50%</b>, самосвал направляется к рядовому забою EX-02.", bullet_style))
     story.append(Paragraph("5. При возникновении очередей под экскаватором или перерывах дробилки часть рейсов демпфируется на аварийный рудный склад усреднения Stockpile-01.", bullet_style))
     story.append(Spacer(1, 6))
     story.append(Paragraph("<b>Результат:</b> Коэффициент вариации содержания меди на входе фабрики снижается с 22% до 3.8%, предотвращая технологические сбои флотации.", bold_body))
