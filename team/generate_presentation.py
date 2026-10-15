@@ -14,10 +14,27 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase.pdfmetrics import registerFont, registerFontFamily
 from reportlab.pdfbase.ttfonts import TTFont
 
+import reportlab.platypus.paraparser as paraparser
+
 SLIDE_WIDTH, SLIDE_HEIGHT = landscape(letter)
 
 
-def setup_cyrillic_fonts():
+def supports_cyrillic(font_path: str) -> bool:
+    """
+    Check if the TTF font file exists and contains Cyrillic glyphs.
+    Probes standard Russian letters (А, я, а, Я) to prevent selecting non-Cyrillic fonts.
+    """
+    if not font_path or not os.path.isfile(font_path):
+        return False
+    try:
+        tt = TTFont("_probe", font_path)
+        needed = (0x0410, 0x044F, 0x0430, 0x042F)
+        return all(ch in tt.face.charToGlyph for ch in needed)
+    except Exception:
+        return False
+
+
+def setup_cyrillic_fonts(sans_candidates=None, mono_candidates=None, search_dirs=None):
     """
     Find and register TrueType Unicode fonts supporting Cyrillic for Windows, Linux, and macOS.
     Returns (font_normal, font_bold, font_mono, font_mono_bold).
@@ -25,123 +42,230 @@ def setup_cyrillic_fonts():
     win_dir = os.environ.get("WINDIR", os.environ.get("SYSTEMROOT", "C:\\Windows"))
     win_fonts = os.path.join(win_dir, "Fonts")
 
-    sans_candidates = [
-        # Windows
-        (os.path.join(win_fonts, "arial.ttf"), os.path.join(win_fonts, "arialbd.ttf")),
-        (os.path.join(win_fonts, "calibri.ttf"), os.path.join(win_fonts, "calibrib.ttf")),
-        (os.path.join(win_fonts, "segoeui.ttf"), os.path.join(win_fonts, "segoeuib.ttf")),
-        ("C:/Windows/Fonts/arial.ttf", "C:/Windows/Fonts/arialbd.ttf"),
-        ("C:/Windows/Fonts/calibri.ttf", "C:/Windows/Fonts/calibrib.ttf"),
-        ("C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/segoeuib.ttf"),
-        # Linux - Debian / Ubuntu
-        ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
-        ("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"),
-        ("/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf", "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf"),
-        ("/usr/share/fonts/truetype/freefont/FreeSans.ttf", "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"),
-        ("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf", "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf"),
-        ("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf"),
-        # Linux - RedHat / CentOS / Fedora / Arch / Alpine
-        ("/usr/share/fonts/dejavu/DejaVuSans.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"),
-        ("/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf", "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf"),
-        ("/usr/share/fonts/TTF/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"),
-        ("/usr/share/fonts/liberation-sans/LiberationSans-Regular.ttf", "/usr/share/fonts/liberation-sans/LiberationSans-Bold.ttf"),
-        # macOS
-        ("/Library/Fonts/Arial.ttf", "/Library/Fonts/Arial Bold.ttf"),
-        ("/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial Bold.ttf"),
-    ]
+    local_fonts = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+    repo_fonts = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "fonts")
 
-    mono_candidates = [
-        # Windows
-        (os.path.join(win_fonts, "consola.ttf"), os.path.join(win_fonts, "consolab.ttf")),
-        (os.path.join(win_fonts, "cour.ttf"), os.path.join(win_fonts, "courbd.ttf")),
-        ("C:/Windows/Fonts/consola.ttf", "C:/Windows/Fonts/consolab.ttf"),
-        ("C:/Windows/Fonts/cour.ttf", "C:/Windows/Fonts/courbd.ttf"),
-        # Linux
-        ("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"),
-        ("/usr/share/fonts/dejavu/DejaVuSansMono.ttf", "/usr/share/fonts/dejavu/DejaVuSansMono-Bold.ttf"),
-        ("/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf", "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf"),
-        ("/usr/share/fonts/truetype/liberation2/LiberationMono-Regular.ttf", "/usr/share/fonts/truetype/liberation2/LiberationMono-Bold.ttf"),
-        ("/usr/share/fonts/truetype/freefont/FreeMono.ttf", "/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf"),
-        # macOS
-        ("/Library/Fonts/Courier New.ttf", "/Library/Fonts/Courier New Bold.ttf"),
-    ]
+    if sans_candidates is None:
+        sans_candidates = [
+            # Windows
+            (os.path.join(win_fonts, "arial.ttf"), os.path.join(win_fonts, "arialbd.ttf"), os.path.join(win_fonts, "ariali.ttf"), os.path.join(win_fonts, "arialbi.ttf")),
+            (os.path.join(win_fonts, "calibri.ttf"), os.path.join(win_fonts, "calibrib.ttf"), os.path.join(win_fonts, "calibrii.ttf"), os.path.join(win_fonts, "calibriz.ttf")),
+            (os.path.join(win_fonts, "segoeui.ttf"), os.path.join(win_fonts, "segoeuib.ttf"), os.path.join(win_fonts, "segoeuii.ttf"), os.path.join(win_fonts, "segoeuiz.ttf")),
+            ("C:/Windows/Fonts/arial.ttf", "C:/Windows/Fonts/arialbd.ttf", "C:/Windows/Fonts/ariali.ttf", "C:/Windows/Fonts/arialbi.ttf"),
+            ("C:/Windows/Fonts/calibri.ttf", "C:/Windows/Fonts/calibrib.ttf", "C:/Windows/Fonts/calibrii.ttf", "C:/Windows/Fonts/calibriz.ttf"),
+            ("C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/segoeuib.ttf", "C:/Windows/Fonts/segoeuii.ttf", "C:/Windows/Fonts/segoeuiz.ttf"),
+            # Local / bundled fonts
+            (os.path.join(local_fonts, "DejaVuSans.ttf"), os.path.join(local_fonts, "DejaVuSans-Bold.ttf"), os.path.join(local_fonts, "DejaVuSans-Oblique.ttf"), os.path.join(local_fonts, "DejaVuSans-BoldOblique.ttf")),
+            (os.path.join(repo_fonts, "DejaVuSans.ttf"), os.path.join(repo_fonts, "DejaVuSans-Bold.ttf"), os.path.join(repo_fonts, "DejaVuSans-Oblique.ttf"), os.path.join(repo_fonts, "DejaVuSans-BoldOblique.ttf")),
+            # Linux - Debian / Ubuntu
+            ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf"),
+            ("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf"),
+            ("/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf", "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf", "/usr/share/fonts/truetype/liberation2/LiberationSans-Italic.ttf", "/usr/share/fonts/truetype/liberation2/LiberationSans-BoldItalic.ttf"),
+            ("/usr/share/fonts/truetype/freefont/FreeSans.ttf", "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", "/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf", "/usr/share/fonts/truetype/freefont/FreeSansBoldOblique.ttf"),
+            ("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf", "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf", "/usr/share/fonts/truetype/noto/NotoSans-Italic.ttf", "/usr/share/fonts/truetype/noto/NotoSans-BoldItalic.ttf"),
+            ("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf", "/usr/share/fonts/truetype/ubuntu/Ubuntu-RI.ttf", "/usr/share/fonts/truetype/ubuntu/Ubuntu-BI.ttf"),
+            # Linux - RedHat / CentOS / Fedora / Arch / Alpine
+            ("/usr/share/fonts/dejavu/DejaVuSans.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Oblique.ttf", "/usr/share/fonts/dejavu/DejaVuSans-BoldOblique.ttf"),
+            ("/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf", "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf", "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Oblique.ttf", "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-BoldOblique.ttf"),
+            ("/usr/share/fonts/TTF/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf", "/usr/share/fonts/TTF/DejaVuSans-Oblique.ttf", "/usr/share/fonts/TTF/DejaVuSans-BoldOblique.ttf"),
+            ("/usr/share/fonts/liberation-sans/LiberationSans-Regular.ttf", "/usr/share/fonts/liberation-sans/LiberationSans-Bold.ttf", "/usr/share/fonts/liberation-sans/LiberationSans-Italic.ttf", "/usr/share/fonts/liberation-sans/LiberationSans-BoldItalic.ttf"),
+            # macOS
+            ("/Library/Fonts/Arial.ttf", "/Library/Fonts/Arial Bold.ttf", "/Library/Fonts/Arial Italic.ttf", "/Library/Fonts/Arial Bold Italic.ttf"),
+            ("/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/System/Library/Fonts/Supplemental/Arial Italic.ttf", "/System/Library/Fonts/Supplemental/Arial Bold Italic.ttf"),
+        ]
 
-    chosen_sans_reg, chosen_sans_bold = None, None
-    for reg, bold in sans_candidates:
-        if os.path.isfile(reg):
+    if mono_candidates is None:
+        mono_candidates = [
+            # Windows
+            (os.path.join(win_fonts, "consola.ttf"), os.path.join(win_fonts, "consolab.ttf"), os.path.join(win_fonts, "consolai.ttf"), os.path.join(win_fonts, "consolaz.ttf")),
+            (os.path.join(win_fonts, "cour.ttf"), os.path.join(win_fonts, "courbd.ttf"), os.path.join(win_fonts, "couri.ttf"), os.path.join(win_fonts, "courbi.ttf")),
+            ("C:/Windows/Fonts/consola.ttf", "C:/Windows/Fonts/consolab.ttf", "C:/Windows/Fonts/consolai.ttf", "C:/Windows/Fonts/consolaz.ttf"),
+            ("C:/Windows/Fonts/cour.ttf", "C:/Windows/Fonts/courbd.ttf", "C:/Windows/Fonts/couri.ttf", "C:/Windows/Fonts/courbi.ttf"),
+            # Local / bundled mono
+            (os.path.join(local_fonts, "DejaVuSansMono.ttf"), os.path.join(local_fonts, "DejaVuSansMono-Bold.ttf"), os.path.join(local_fonts, "DejaVuSansMono-Oblique.ttf"), os.path.join(local_fonts, "DejaVuSansMono-BoldOblique.ttf")),
+            (os.path.join(repo_fonts, "DejaVuSansMono.ttf"), os.path.join(repo_fonts, "DejaVuSansMono-Bold.ttf"), os.path.join(repo_fonts, "DejaVuSansMono-Oblique.ttf"), os.path.join(repo_fonts, "DejaVuSansMono-BoldOblique.ttf")),
+            # Linux
+            ("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Oblique.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-BoldOblique.ttf"),
+            ("/usr/share/fonts/dejavu/DejaVuSansMono.ttf", "/usr/share/fonts/dejavu/DejaVuSansMono-Bold.ttf", "/usr/share/fonts/dejavu/DejaVuSansMono-Oblique.ttf", "/usr/share/fonts/dejavu/DejaVuSansMono-BoldOblique.ttf"),
+            ("/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf", "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf", "/usr/share/fonts/truetype/liberation/LiberationMono-Italic.ttf", "/usr/share/fonts/truetype/liberation/LiberationMono-BoldItalic.ttf"),
+            ("/usr/share/fonts/truetype/liberation2/LiberationMono-Regular.ttf", "/usr/share/fonts/truetype/liberation2/LiberationMono-Bold.ttf", "/usr/share/fonts/truetype/liberation2/LiberationMono-Italic.ttf", "/usr/share/fonts/truetype/liberation2/LiberationMono-BoldItalic.ttf"),
+            ("/usr/share/fonts/truetype/freefont/FreeMono.ttf", "/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf", "/usr/share/fonts/truetype/freefont/FreeMonoOblique.ttf", "/usr/share/fonts/truetype/freefont/FreeMonoBoldOblique.ttf"),
+            # macOS
+            ("/Library/Fonts/Courier New.ttf", "/Library/Fonts/Courier New Bold.ttf", "/Library/Fonts/Courier New Italic.ttf", "/Library/Fonts/Courier New Bold Italic.ttf"),
+        ]
+
+    chosen_sans_reg, chosen_sans_bold, chosen_sans_italic, chosen_sans_bold_italic = None, None, None, None
+    for entry in sans_candidates:
+        reg = entry[0]
+        if supports_cyrillic(reg):
             chosen_sans_reg = reg
-            chosen_sans_bold = bold if os.path.isfile(bold) else reg
+            bold = entry[1] if len(entry) > 1 else None
+            chosen_sans_bold = bold if supports_cyrillic(bold) else reg
+            it = entry[2] if len(entry) > 2 else None
+            chosen_sans_italic = it if supports_cyrillic(it) else reg
+            bi = entry[3] if len(entry) > 3 else None
+            chosen_sans_bold_italic = bi if supports_cyrillic(bi) else chosen_sans_bold
             break
 
-    if not chosen_sans_reg:
+    if search_dirs is None:
         search_dirs = [
+            local_fonts, repo_fonts,
+            win_fonts, "C:/Windows/Fonts",
             "/usr/share/fonts", "/usr/local/share/fonts",
             os.path.expanduser("~/.fonts"), os.path.expanduser("~/.local/share/fonts"),
-            win_fonts, "C:/Windows/Fonts", "/Library/Fonts"
+            "/Library/Fonts", "/System/Library/Fonts"
         ]
+
+    if not chosen_sans_reg:
         for sdir in search_dirs:
             if not os.path.isdir(sdir):
                 continue
             for root, _, files in os.walk(sdir):
-                for f in files:
+                for f in sorted(files):
                     lf = f.lower()
-                    if lf.endswith(".ttf") and any(k in lf for k in ("sans", "dejavu", "liberation", "arial", "noto", "ubuntu")):
-                        chosen_sans_reg = os.path.join(root, f)
-                        chosen_sans_bold = chosen_sans_reg
-                        break
+                    if lf.endswith(".ttf") and not any(skip in lf for skip in ("italic", "oblique", "light", "thin", "condensed")):
+                        cand = os.path.join(root, f)
+                        if supports_cyrillic(cand):
+                            chosen_sans_reg = cand
+                            base = os.path.splitext(f)[0]
+                            for bc in (f"{base}-Bold.ttf", f"{base}bd.ttf", f"{base}_Bold.ttf", f"{base}Bold.ttf"):
+                                full_bc = os.path.join(root, bc)
+                                if supports_cyrillic(full_bc):
+                                    chosen_sans_bold = full_bc
+                                    break
+                            chosen_sans_bold = chosen_sans_bold or chosen_sans_reg
+                            chosen_sans_italic = chosen_sans_reg
+                            chosen_sans_bold_italic = chosen_sans_bold
+                            break
                 if chosen_sans_reg:
                     break
             if chosen_sans_reg:
                 break
 
-    chosen_mono_reg, chosen_mono_bold = None, None
-    for reg, bold in mono_candidates:
-        if os.path.isfile(reg):
+    chosen_mono_reg, chosen_mono_bold, chosen_mono_italic, chosen_mono_bold_italic = None, None, None, None
+    for entry in mono_candidates:
+        reg = entry[0]
+        if supports_cyrillic(reg):
             chosen_mono_reg = reg
-            chosen_mono_bold = bold if os.path.isfile(bold) else reg
+            bold = entry[1] if len(entry) > 1 else None
+            chosen_mono_bold = bold if supports_cyrillic(bold) else reg
+            it = entry[2] if len(entry) > 2 else None
+            chosen_mono_italic = it if supports_cyrillic(it) else reg
+            bi = entry[3] if len(entry) > 3 else None
+            chosen_mono_bold_italic = bi if supports_cyrillic(bi) else chosen_mono_bold
             break
+
+    if not chosen_mono_reg:
+        for sdir in search_dirs:
+            if not os.path.isdir(sdir):
+                continue
+            for root, _, files in os.walk(sdir):
+                for f in sorted(files):
+                    lf = f.lower()
+                    if lf.endswith(".ttf") and any(k in lf for k in ("mono", "courier", "consol")) and not any(skip in lf for skip in ("italic", "oblique")):
+                        cand = os.path.join(root, f)
+                        if supports_cyrillic(cand):
+                            chosen_mono_reg = cand
+                            base = os.path.splitext(f)[0]
+                            for bc in (f"{base}-Bold.ttf", f"{base}bd.ttf", f"{base}_Bold.ttf", f"{base}Bold.ttf"):
+                                full_bc = os.path.join(root, bc)
+                                if supports_cyrillic(full_bc):
+                                    chosen_mono_bold = full_bc
+                                    break
+                            chosen_mono_bold = chosen_mono_bold or chosen_mono_reg
+                            chosen_mono_italic = chosen_mono_reg
+                            chosen_mono_bold_italic = chosen_mono_bold
+                            break
+                if chosen_mono_reg:
+                    break
+            if chosen_mono_reg:
+                break
 
     if chosen_sans_reg:
         fn_normal = "CyrillicSans"
         fn_bold = "CyrillicSans-Bold"
+        fn_italic = "CyrillicSans-Italic"
+        fn_bold_italic = "CyrillicSans-BoldItalic"
+
         registerFont(TTFont(fn_normal, chosen_sans_reg))
         registerFont(TTFont(fn_bold, chosen_sans_bold))
-        registerFontFamily(fn_normal, normal=fn_normal, bold=fn_bold)
-        registerFontFamily(fn_bold, normal=fn_bold, bold=fn_bold)
+        registerFont(TTFont(fn_italic, chosen_sans_italic or chosen_sans_reg))
+        registerFont(TTFont(fn_bold_italic, chosen_sans_bold_italic or chosen_sans_bold))
+
+        registerFontFamily(fn_normal, normal=fn_normal, bold=fn_bold, italic=fn_italic, boldItalic=fn_bold_italic)
+        registerFontFamily(fn_bold, normal=fn_bold, bold=fn_bold, italic=fn_bold_italic, boldItalic=fn_bold_italic)
 
         if chosen_mono_reg:
             fn_mono = "CyrillicMono"
             fn_mono_bold = "CyrillicMono-Bold"
+            fn_mono_italic = "CyrillicMono-Italic"
+            fn_mono_bold_italic = "CyrillicMono-BoldItalic"
+
             registerFont(TTFont(fn_mono, chosen_mono_reg))
             registerFont(TTFont(fn_mono_bold, chosen_mono_bold))
-            registerFontFamily(fn_mono, normal=fn_mono, bold=fn_mono_bold)
-            registerFontFamily(fn_mono_bold, normal=fn_mono_bold, bold=fn_mono_bold)
+            registerFont(TTFont(fn_mono_italic, chosen_mono_italic or chosen_mono_reg))
+            registerFont(TTFont(fn_mono_bold_italic, chosen_mono_bold_italic or chosen_mono_bold))
+
+            registerFontFamily(fn_mono, normal=fn_mono, bold=fn_mono_bold, italic=fn_mono_italic, boldItalic=fn_mono_bold_italic)
+            registerFontFamily(fn_mono_bold, normal=fn_mono_bold, bold=fn_mono_bold, italic=fn_mono_bold_italic, boldItalic=fn_mono_bold_italic)
         else:
             fn_mono = fn_normal
             fn_mono_bold = fn_bold
 
         # Defensively alias standard PostScript fonts so any fallback/internal uses also render Cyrillic
-        for std_name, std_path in [("Helvetica", chosen_sans_reg), ("Helvetica-Bold", chosen_sans_bold)]:
+        sans_substitutions = [
+            ("Helvetica", chosen_sans_reg),
+            ("Helvetica-Bold", chosen_sans_bold),
+            ("Helvetica-Oblique", chosen_sans_italic or chosen_sans_reg),
+            ("Helvetica-BoldOblique", chosen_sans_bold_italic or chosen_sans_bold),
+            ("Times-Roman", chosen_sans_reg),
+            ("Times-Bold", chosen_sans_bold),
+            ("Times-Italic", chosen_sans_italic or chosen_sans_reg),
+            ("Times-BoldItalic", chosen_sans_bold_italic or chosen_sans_bold),
+        ]
+        for std_name, std_path in sans_substitutions:
             try:
                 registerFont(TTFont(std_name, std_path))
             except Exception:
                 pass
         try:
-            registerFontFamily("Helvetica", normal="Helvetica", bold="Helvetica-Bold")
+            registerFontFamily("Helvetica", normal="Helvetica", bold="Helvetica-Bold", italic="Helvetica-Oblique", boldItalic="Helvetica-BoldOblique")
+        except Exception:
+            pass
+        try:
+            registerFontFamily("Times-Roman", normal="Times-Roman", bold="Times-Bold", italic="Times-Italic", boldItalic="Times-BoldItalic")
         except Exception:
             pass
 
         mono_target = chosen_mono_reg or chosen_sans_reg
         mono_bold_target = chosen_mono_bold or chosen_sans_bold
-        for std_name, std_path in [("Courier", mono_target), ("Courier-Bold", mono_bold_target)]:
+        mono_italic_target = chosen_mono_italic or mono_target
+        mono_bi_target = chosen_mono_bold_italic or mono_bold_target
+        mono_substitutions = [
+            ("Courier", mono_target),
+            ("Courier-Bold", mono_bold_target),
+            ("Courier-Oblique", mono_italic_target),
+            ("Courier-BoldOblique", mono_bi_target),
+        ]
+        for std_name, std_path in mono_substitutions:
             try:
                 registerFont(TTFont(std_name, std_path))
             except Exception:
                 pass
         try:
-            registerFontFamily("Courier", normal="Courier", bold="Courier-Bold")
+            registerFontFamily("Courier", normal="Courier", bold="Courier-Bold", italic="Courier-Oblique", boldItalic="Courier-BoldOblique")
         except Exception:
             pass
+
+        # Enable inline <code>...</code> tag support in Paragraphs to switch to monospaced Cyrillic font
+        def _start_code(self, attr):
+            self._push("font", fontName=fn_mono)
+
+        def _end_code(self):
+            self._pop("font")
+
+        paraparser.ParaParser.start_code = _start_code
+        paraparser.ParaParser.end_code = _end_code
 
         return fn_normal, fn_bold, fn_mono, fn_mono_bold
 
@@ -198,7 +322,14 @@ def build_presentation(out_path: str):
     )
 
     styles = getSampleStyleSheet()
-    styles["Normal"].fontName = FONT_NORMAL
+    for s in list(styles.byName.values()):
+        if hasattr(s, "fontName"):
+            if "Bold" in s.fontName:
+                s.fontName = FONT_BOLD
+            elif "Courier" in s.fontName or "Mono" in s.fontName:
+                s.fontName = FONT_MONO
+            else:
+                s.fontName = FONT_NORMAL
 
     # Custom styles
     title_style = ParagraphStyle(
