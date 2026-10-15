@@ -1,0 +1,274 @@
+{
+  "org.openegiz.aktogay:mine-01": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Aktogay Open-Pit Copper Mine",
+      "_isType": false,
+      "kind": "mine",
+      "operator": "KAZ Minerals",
+      "target_grade_cu": 0.48,
+      "location": "Abai Region, Kazakhstan"
+    },
+    "features": {
+      "tonnes_mined": {"properties": {"value": 0.0, "unit": "t"}},
+      "avg_grade": {"properties": {"value": 0.48, "unit": "% Cu"}},
+      "trucks_active": {"properties": {"value": 5, "unit": "trucks"}},
+      "fuel_consumed_total": {"properties": {"value": 0.0, "unit": "l"}},
+      "energy_intensity": {"properties": {"value": 0.0, "unit": "l/t"}},
+      "current_feed_grade": {"properties": {"value": 0.48, "unit": "% Cu"}}
+    }
+  },
+  "org.openegiz.aktogay:excavator-01": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Electric Rope Shovel EX-01",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "excavator",
+      "model": "CAT 7495",
+      "bucket_capacity_m3": 56,
+      "rated_payload_t": 100,
+      "bench": "+280m North",
+      "ore_zone": "high_grade"
+    },
+    "features": {
+      "state": {"properties": {"value": "idle"}},
+      "face_grade": {"properties": {"value": 0.64, "unit": "% Cu"}},
+      "passes_total": {"properties": {"value": 0, "unit": "passes"}},
+      "tonnes_loaded": {"properties": {"value": 0.0, "unit": "t"}},
+      "queue_length": {"properties": {"value": 0, "unit": "trucks"}}
+    }
+  },
+  "org.openegiz.aktogay:excavator-02": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Electric Rope Shovel EX-02",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "excavator",
+      "model": "CAT 7495",
+      "bucket_capacity_m3": 56,
+      "rated_payload_t": 100,
+      "bench": "+220m Central",
+      "ore_zone": "rom_grade"
+    },
+    "features": {
+      "state": {"properties": {"value": "idle"}},
+      "face_grade": {"properties": {"value": 0.40, "unit": "% Cu"}},
+      "passes_total": {"properties": {"value": 0, "unit": "passes"}},
+      "tonnes_loaded": {"properties": {"value": 0.0, "unit": "t"}},
+      "queue_length": {"properties": {"value": 0, "unit": "trucks"}}
+    }
+  },
+  "org.openegiz.aktogay:excavator-03": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Electric Rope Shovel EX-03",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "excavator",
+      "model": "CAT 7495",
+      "bucket_capacity_m3": 56,
+      "rated_payload_t": 100,
+      "bench": "+320m West",
+      "ore_zone": "waste"
+    },
+    "features": {
+      "state": {"properties": {"value": "idle"}},
+      "face_grade": {"properties": {"value": 0.08, "unit": "% Cu"}},
+      "passes_total": {"properties": {"value": 0, "unit": "passes"}},
+      "tonnes_loaded": {"properties": {"value": 0.0, "unit": "t"}},
+      "queue_length": {"properties": {"value": 0, "unit": "trucks"}}
+    }
+  },
+  "org.openegiz.aktogay:truck-01": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Haul Truck HT-01",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "haul-truck",
+      "model": "CAT 793F",
+      "capacity_t": 227,
+      "empty_weight_t": 159,
+      "fuel_capacity_l": 2839
+    },
+    "features": {
+      "state": {"properties": {"value": "queued_at_excavator"}},
+      "payload": {"properties": {"value": 0.0, "unit": "t"}},
+      "speed": {"properties": {"value": 0.0, "unit": "km/h"}},
+      "route_position": {"properties": {"value": 0.0, "unit": "km"}},
+      "route_progress_pct": {"properties": {"value": 0.0, "unit": "%"}},
+      "current_segment": {"properties": {"value": "bench_280"}},
+      "grade_in_box": {"properties": {"value": 0.0, "unit": "% Cu"}},
+      "fuel_level": {"properties": {"value": 95.0, "unit": "%"}},
+      "fuel_rate": {"properties": {"value": 15.0, "unit": "l/h"}},
+      "trips_total": {"properties": {"value": 0, "unit": "trips"}},
+      "tire_tkph": {"properties": {"value": 240, "unit": "TKPH"}}
+    }
+  },
+  "org.openegiz.aktogay:truck-02": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Haul Truck HT-02",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "haul-truck",
+      "model": "CAT 793F",
+      "capacity_t": 227,
+      "empty_weight_t": 159,
+      "fuel_capacity_l": 2839
+    },
+    "features": {
+      "state": {"properties": {"value": "queued_at_excavator"}},
+      "payload": {"properties": {"value": 0.0, "unit": "t"}},
+      "speed": {"properties": {"value": 0.0, "unit": "km/h"}},
+      "route_position": {"properties": {"value": 0.0, "unit": "km"}},
+      "route_progress_pct": {"properties": {"value": 0.0, "unit": "%"}},
+      "current_segment": {"properties": {"value": "bench_220"}},
+      "grade_in_box": {"properties": {"value": 0.0, "unit": "% Cu"}},
+      "fuel_level": {"properties": {"value": 90.0, "unit": "%"}},
+      "fuel_rate": {"properties": {"value": 15.0, "unit": "l/h"}},
+      "trips_total": {"properties": {"value": 0, "unit": "trips"}},
+      "tire_tkph": {"properties": {"value": 235, "unit": "TKPH"}}
+    }
+  },
+  "org.openegiz.aktogay:truck-03": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Haul Truck HT-03",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "haul-truck",
+      "model": "CAT 793F",
+      "capacity_t": 227,
+      "empty_weight_t": 159,
+      "fuel_capacity_l": 2839
+    },
+    "features": {
+      "state": {"properties": {"value": "hauling"}},
+      "payload": {"properties": {"value": 225.0, "unit": "t"}},
+      "speed": {"properties": {"value": 14.5, "unit": "km/h"}},
+      "route_position": {"properties": {"value": 1.4, "unit": "km"}},
+      "route_progress_pct": {"properties": {"value": 35.0, "unit": "%"}},
+      "current_segment": {"properties": {"value": "ramp_main"}},
+      "grade_in_box": {"properties": {"value": 0.64, "unit": "% Cu"}},
+      "fuel_level": {"properties": {"value": 85.0, "unit": "%"}},
+      "fuel_rate": {"properties": {"value": 175.0, "unit": "l/h"}},
+      "trips_total": {"properties": {"value": 0, "unit": "trips"}},
+      "tire_tkph": {"properties": {"value": 280, "unit": "TKPH"}}
+    }
+  },
+  "org.openegiz.aktogay:truck-04": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Haul Truck HT-04",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "haul-truck",
+      "model": "CAT 793F",
+      "capacity_t": 227,
+      "empty_weight_t": 159,
+      "fuel_capacity_l": 2839
+    },
+    "features": {
+      "state": {"properties": {"value": "hauling"}},
+      "payload": {"properties": {"value": 224.0, "unit": "t"}},
+      "speed": {"properties": {"value": 15.0, "unit": "km/h"}},
+      "route_position": {"properties": {"value": 2.2, "unit": "km"}},
+      "route_progress_pct": {"properties": {"value": 60.0, "unit": "%"}},
+      "current_segment": {"properties": {"value": "ramp_upper"}},
+      "grade_in_box": {"properties": {"value": 0.40, "unit": "% Cu"}},
+      "fuel_level": {"properties": {"value": 88.0, "unit": "%"}},
+      "fuel_rate": {"properties": {"value": 170.0, "unit": "l/h"}},
+      "trips_total": {"properties": {"value": 0, "unit": "trips"}},
+      "tire_tkph": {"properties": {"value": 275, "unit": "TKPH"}}
+    }
+  },
+  "org.openegiz.aktogay:truck-05": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Haul Truck HT-05",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "haul-truck",
+      "model": "CAT 793F",
+      "capacity_t": 227,
+      "empty_weight_t": 159,
+      "fuel_capacity_l": 2839
+    },
+    "features": {
+      "state": {"properties": {"value": "returning"}},
+      "payload": {"properties": {"value": 0.0, "unit": "t"}},
+      "speed": {"properties": {"value": 38.0, "unit": "km/h"}},
+      "route_position": {"properties": {"value": 3.1, "unit": "km"}},
+      "route_progress_pct": {"properties": {"value": 80.0, "unit": "%"}},
+      "current_segment": {"properties": {"value": "ramp_down"}},
+      "grade_in_box": {"properties": {"value": 0.0, "unit": "% Cu"}},
+      "fuel_level": {"properties": {"value": 82.0, "unit": "%"}},
+      "fuel_rate": {"properties": {"value": 28.0, "unit": "l/h"}},
+      "trips_total": {"properties": {"value": 0, "unit": "trips"}},
+      "tire_tkph": {"properties": {"value": 250, "unit": "TKPH"}}
+    }
+  },
+  "org.openegiz.aktogay:crusher-01": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Primary Gyratory Crusher CR-01",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "crusher",
+      "model": "Metso 60-89 Superior",
+      "rated_tph": 8000
+    },
+    "features": {
+      "state": {"properties": {"value": "crushing"}},
+      "throughput": {"properties": {"value": 0.0, "unit": "t/h"}},
+      "feed_grade": {"properties": {"value": 0.48, "unit": "% Cu"}},
+      "hopper_level": {"properties": {"value": 45.0, "unit": "%"}},
+      "tonnes_total": {"properties": {"value": 0.0, "unit": "t"}},
+      "power_draw_kw": {"properties": {"value": 450.0, "unit": "kW"}}
+    }
+  },
+  "org.openegiz.aktogay:stockpile-01": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Blending Surge Stockpile SP-01",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "stockpile",
+      "capacity_t": 250000
+    },
+    "features": {
+      "tonnes_stored": {"properties": {"value": 45200.0, "unit": "t"}},
+      "avg_grade": {"properties": {"value": 0.51, "unit": "% Cu"}}
+    }
+  },
+  "org.openegiz.aktogay:waste-dump-01": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "North Overburden Waste Dump WD-01",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "waste-dump"
+    },
+    "features": {
+      "tonnes_dumped": {"properties": {"value": 0.0, "unit": "t"}}
+    }
+  },
+  "org.openegiz.aktogay:slope-radar-01": {
+    "policyId": "default:basic_policy",
+    "attributes": {
+      "name": "Slope Stability Radar SSR-01",
+      "_isType": false,
+      "_parents": "org.openegiz.aktogay:mine-01",
+      "kind": "safety-radar",
+      "coverage_bench": "+240m South Ramp"
+    },
+    "features": {
+      "status": {"properties": {"value": "normal"}},
+      "displacement_rate_mm_day": {"properties": {"value": 0.2, "unit": "mm/day"}},
+      "road_status": {"properties": {"value": "open"}}
+    }
+  }
+}
