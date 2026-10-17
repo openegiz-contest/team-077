@@ -29,6 +29,7 @@ import signal
 import sys
 import threading
 import time
+import urllib.parse
 
 try:
     import paho.mqtt.client as mqtt
@@ -185,6 +186,8 @@ class AktogayPit:
     def trigger_ex1_failure(self, active: bool = None) -> bool:
         if active is None:
             active = not self.whatif_ex1_failure
+        if active == self.whatif_ex1_failure:
+            return self.whatif_ex1_failure
         self.whatif_ex1_failure = active
         if active:
             self.excavators["excavator-01"].state = "breakdown"
@@ -195,11 +198,16 @@ class AktogayPit:
                     truck.current_segment = "diverted_to_ex2"
         else:
             self.excavators["excavator-01"].state = "idle"
+            for truck in self.trucks:
+                if truck.current_segment == "diverted_to_ex2":
+                    truck.current_segment = "ramp_down"
         return self.whatif_ex1_failure
 
     def trigger_road_block(self, active: bool = None) -> bool:
         if active is None:
             active = not self.whatif_road_blocked
+        if active == self.whatif_road_blocked:
+            return self.whatif_road_blocked
         self.whatif_road_blocked = active
         if active:
             self.radar_status = "alert_collapse"
@@ -220,11 +228,15 @@ class AktogayPit:
                     truck.total_route_km = DIST_EX2_TO_CRUSHER
                 else:
                     truck.total_route_km = DIST_EX3_TO_WASTE
+                if truck.current_segment == "detour_bypass":
+                    truck.current_segment = "ramp_main" if truck.state == "hauling" else "ramp_down"
         return self.whatif_road_blocked
 
     def trigger_dilution(self, active: bool = None) -> bool:
         if active is None:
             active = not self.whatif_dilution
+        if active == self.whatif_dilution:
+            return self.whatif_dilution
         self.whatif_dilution = active
         if active:
             self.excavators["excavator-02"].face_grade = 0.22  # Sudden dilution
@@ -480,10 +492,35 @@ class WhatIfHandler(http.server.BaseHTTPRequestHandler):
     def do_HEAD(self):
         self.do_GET()
 
+    def _parse_active_param(self, path: str):
+        if "?" in path:
+            query = path.split("?", 1)[1]
+            params = urllib.parse.parse_qs(query)
+            if "active" in params:
+                val = params["active"][0].lower()
+                if val in ("true", "1", "yes", "on"):
+                    return True
+                elif val in ("false", "0", "no", "off"):
+                    return False
+        cl = self.headers.get("Content-Length")
+        if cl and cl.isdigit():
+            length = int(cl)
+            if 0 < length < 65536:
+                try:
+                    body = self.rfile.read(length)
+                    data = json.loads(body.decode("utf-8"))
+                    if isinstance(data, dict) and "active" in data:
+                        return bool(data["active"])
+                except Exception:
+                    pass
+        return None
+
     def _handle_whatif(self, path: str):
         endpoint = path.split("?")[0].rstrip("/")
+        active_target = self._parse_active_param(path)
+
         if endpoint == "/api/whatif/ex1-fail":
-            new_state = self.pit.trigger_ex1_failure()
+            new_state = self.pit.trigger_ex1_failure(active_target)
             if new_state:
                 msg = "[Симуляция] Активирована авария экскаватора EX-01. Подача богатой руды остановлена, самосвалы перенаправлены на Склад-01."
                 status = "active"
@@ -492,7 +529,7 @@ class WhatIfHandler(http.server.BaseHTTPRequestHandler):
                 status = "inactive"
             self._send_json(200, {"scenario": "ex1_failure", "status": status, "active": new_state, "message": msg})
         elif endpoint == "/api/whatif/road-block":
-            new_state = self.pit.trigger_road_block()
+            new_state = self.pit.trigger_road_block(active_target)
             if new_state:
                 msg = "[Симуляция] Активирован обвал на горизонте +240м. Основной съезд закрыт, самосвалы направлены по объездной трассе (+1.4 км)."
                 status = "active"
@@ -501,7 +538,7 @@ class WhatIfHandler(http.server.BaseHTTPRequestHandler):
                 status = "inactive"
             self._send_json(200, {"scenario": "road_blocked", "status": status, "active": new_state, "message": msg})
         elif endpoint == "/api/whatif/dilution":
-            new_state = self.pit.trigger_dilution()
+            new_state = self.pit.trigger_dilution(active_target)
             if new_state:
                 msg = "[Симуляция] Активировано разубоживание в забое EX-02 (содержание упало до 0.22% Cu). Диспетчер адаптирует шихтовку."
                 status = "active"

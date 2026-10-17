@@ -868,7 +868,7 @@ function update3D(data) {
 }
 
 // What-If scenario triggers
-async function toggleWhatIf(scenario) {
+async function triggerWhatIf(scenario) {
   try {
     const res = await fetch(`/api/whatif/${scenario}`);
     const data = await res.json();
@@ -895,8 +895,13 @@ async function toggleWhatIf(scenario) {
   }
 }
 
-async function triggerWhatIf(scenario) {
-  return toggleWhatIf(scenario);
+const toggleWhatIf = triggerWhatIf;
+
+// Expose globally for HTML onclick handlers and test scripts
+if (typeof window !== "undefined") {
+  window.triggerWhatIf = triggerWhatIf;
+  window.toggleWhatIf = triggerWhatIf;
+  window.resetWhatIf = resetWhatIf;
 }
 
 async function resetWhatIf() {
