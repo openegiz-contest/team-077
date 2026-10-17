@@ -7,19 +7,21 @@ let scene, camera, renderer, controls;
 let truckMeshes = {};
 let shovelMeshes = {};
 let pitMesh, rampLine, detourLine;
-let radarBeamMesh;
+let radarBeamMesh, rockslideGroup;
 let activeCamTarget = null;
 let currentCameraMode = "orbit";
 
 // Coordinates for key pit locations
+// Ground surface plateau is at elevation Y = 35 (+350m horizon)
+// Quarry crater descends down to Y = -12 (+150m horizon pit floor)
 const LOCATIONS = {
-  crusher: new THREE.Vector3(120, 35, -40),
-  stockpile: new THREE.Vector3(150, 36, -30),
-  waste_dump: new THREE.Vector3(-140, 35, -120),
-  ex1: new THREE.Vector3(40, 20, 80),     // Bench +280m
-  ex2: new THREE.Vector3(-60, 5, 20),     // Bench +220m
-  ex3: new THREE.Vector3(-90, 28, -60),   // Bench +320m
-  radar: new THREE.Vector3(0, 36, -140),
+  crusher: new THREE.Vector3(145, 35, -45),
+  stockpile: new THREE.Vector3(175, 35, -35),
+  waste_dump: new THREE.Vector3(-170, 35, -120),
+  ex1: new THREE.Vector3(40, 19, 80),     // Bench +280m High-grade Cu (0.64%)
+  ex2: new THREE.Vector3(-34, 3, 16),     // Bench +220m ROM Porphyry Cu (0.40%)
+  ex3: new THREE.Vector3(-92, 28, -62),   // Bench +320m Waste Overburden
+  radar: new THREE.Vector3(0, 35, -150),  // North rim Slope Stability Radar (SSR)
 };
 
 // Spline Curves for Haul Routes
@@ -28,11 +30,11 @@ let routeEX1, routeEX2, routeEX3, routeDetour;
 function init() {
   const canvas = document.getElementById("viewport");
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0f17);
-  scene.fog = new THREE.FogExp2(0x0b0f17, 0.0018);
+  scene.background = new THREE.Color(0x0f172a);
+  scene.fog = new THREE.FogExp2(0x0f172a, 0.0012);
 
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
-  camera.position.set(160, 140, 220);
+  camera.position.set(160, 130, 190);
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -45,8 +47,8 @@ function init() {
   controls.dampingFactor = 0.05;
   controls.maxPolarAngle = Math.PI / 2.05; // Prevent camera clipping underground
   controls.minDistance = 20;
-  controls.maxDistance = 600;
-  controls.target.set(0, 10, 0);
+  controls.maxDistance = 650;
+  controls.target.set(0, 8, 0);
 
   setupLighting();
   buildOpenPit();
@@ -63,202 +65,385 @@ function init() {
 }
 
 function setupLighting() {
-  const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.55);
+  // Ambient fill light for realistic soft shadows
+  const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.45);
   scene.add(ambientLight);
 
-  const sunLight = new THREE.DirectionalLight(0xffedd5, 1.2);
-  sunLight.position.set(150, 250, 100);
+  // Directional sun light casting soft shadows across the pit benches
+  const sunLight = new THREE.DirectionalLight(0xffedd5, 1.35);
+  sunLight.position.set(180, 240, 110);
   sunLight.castShadow = true;
   sunLight.shadow.mapSize.width = 2048;
   sunLight.shadow.mapSize.height = 2048;
   sunLight.shadow.camera.near = 10;
-  sunLight.shadow.camera.far = 600;
-  sunLight.shadow.camera.left = -200;
-  sunLight.shadow.camera.right = 200;
-  sunLight.shadow.camera.top = 200;
-  sunLight.shadow.camera.bottom = -200;
+  sunLight.shadow.camera.far = 700;
+  sunLight.shadow.camera.left = -220;
+  sunLight.shadow.camera.right = 220;
+  sunLight.shadow.camera.top = 220;
+  sunLight.shadow.camera.bottom = -220;
+  sunLight.shadow.bias = -0.0005;
   scene.add(sunLight);
 
-  // Soft blue sky bounce light
-  const hemiLight = new THREE.HemisphereLight(0x38bdf8, 0x1e293b, 0.4);
+  // Sky hemisphere bounce light
+  const hemiLight = new THREE.HemisphereLight(0x7dd3fc, 0x1e293b, 0.55);
   scene.add(hemiLight);
 }
 
 function buildOpenPit() {
-  // Ground plane surface (+350m elevation)
-  const surfaceGeo = new THREE.PlaneGeometry(600, 600, 32, 32);
+  const pitGroup = new THREE.Group();
+
+  // 1. Surrounding Plateau Surface (+350m elevation) with exact pit crater opening
+  // Built using Shape with a circular hole so the pit is an OPEN sunken excavation bowl
+  const surfaceShape = new THREE.Shape();
+  const halfSize = 500;
+  surfaceShape.moveTo(-halfSize, -halfSize);
+  surfaceShape.lineTo(halfSize, -halfSize);
+  surfaceShape.lineTo(halfSize, halfSize);
+  surfaceShape.lineTo(-halfSize, halfSize);
+  surfaceShape.closePath();
+
+  // Circular crater rim opening (radius 145)
+  const rimRadius = 145;
+  const pitHole = new THREE.Path();
+  pitHole.absarc(0, 0, rimRadius, 0, Math.PI * 2, true);
+  surfaceShape.holes.push(pitHole);
+
+  const surfaceGeo = new THREE.ShapeGeometry(surfaceShape, 64);
   const surfaceMat = new THREE.MeshStandardMaterial({
-    color: 0x5a4d41,
-    roughness: 0.9,
-    metalness: 0.1,
+    color: 0x6e6355, // Steppe arid plateau earth
+    roughness: 0.92,
+    metalness: 0.05,
     flatShading: true,
+    side: THREE.DoubleSide,
   });
   const surface = new THREE.Mesh(surfaceGeo, surfaceMat);
   surface.rotation.x = -Math.PI / 2;
   surface.position.y = 35;
   surface.receiveShadow = true;
-  scene.add(surface);
+  pitGroup.add(surface);
 
-  // Pit crater with concentric stepped terraces (benches)
-  const benches = [
-    { radiusTop: 160, radiusBottom: 140, height: 8, y: 31, color: 0x6b5b4d },
-    { radiusTop: 140, radiusBottom: 120, height: 8, y: 23, color: 0x786756 }, // +280m High-grade
-    { radiusTop: 120, radiusBottom: 100, height: 8, y: 15, color: 0x857260 },
-    { radiusTop: 100, radiusBottom: 80, height: 8, y: 7, color: 0x8a6e55 },  // +220m ROM
-    { radiusTop: 80, radiusBottom: 55, height: 8, y: -1, color: 0x54473b },
-    { radiusTop: 55, radiusBottom: 35, height: 8, y: -9, color: 0x45392f },  // Pit bottom
+  // 2. Realistic Stepped Benches (Уступы карьера)
+  // Each tier consists of:
+  // - Sloped batter face (откос уступа)
+  // - Horizontal working berm shelf (горизонтальная берма безопасности/площадка)
+  const benchTiers = [
+    {
+      // Tier 0: Horizon +350m to +320m (Waste overburden / Наносы и вскрыша)
+      yTop: 35, rTop: 145, yBottom: 28, rToe: 128, rBermIn: 116,
+      faceColor: 0x6d5e50, bermColor: 0x584b3f
+    },
+    {
+      // Tier 1: Horizon +320m to +280m (High-grade Cu mineralization - Забой EX-01)
+      yTop: 28, rTop: 116, yBottom: 19, rToe: 98, rBermIn: 84,
+      faceColor: 0x27594f, bermColor: 0x3a544c // Rich malachite/copper oxidized ore face
+    },
+    {
+      // Tier 2: Horizon +280m to +250m (Intermediate transition horizon)
+      yTop: 19, rTop: 84, yBottom: 11, rToe: 68, rBermIn: 58,
+      faceColor: 0x785340, bermColor: 0x5a3e30 // Mixed sulfide copper ore
+    },
+    {
+      // Tier 3: Horizon +250m to +220m (Primary ROM porphyry Cu - Забой EX-02)
+      yTop: 11, rTop: 58, yBottom: 3, rToe: 44, rBermIn: 32,
+      faceColor: 0x8c5b36, bermColor: 0x5f4129 // Chalcopyrite bronze tone
+    },
+    {
+      // Tier 4: Horizon +220m to +180m (Deep excavation horizon)
+      yTop: 3, rTop: 32, yBottom: -5, rToe: 22, rBermIn: 16,
+      faceColor: 0x44372e, bermColor: 0x322822 // Deep dark bedrock
+    },
+    {
+      // Tier 5: Horizon +180m to +150m (Pit bottom slope to sump)
+      yTop: -5, rTop: 16, yBottom: -12, rToe: 12, rBermIn: 0,
+      faceColor: 0x2c221b, bermColor: 0x241c16
+    },
   ];
 
-  benches.forEach((b, idx) => {
-    const benchGeo = new THREE.CylinderGeometry(b.radiusTop, b.radiusBottom, b.height, 48, 1, true);
-    // Tint ore faces with greenish-copper or reddish tones
-    let faceColor = b.color;
-    if (idx === 1) faceColor = 0x3d7068; // Cu high-grade mineralization
-    if (idx === 3) faceColor = 0x7c4f3d; // Porphyry Cu ROM
-
-    const benchMat = new THREE.MeshStandardMaterial({
-      color: faceColor,
-      roughness: 0.85,
-      metalness: 0.15,
-      side: THREE.BackSide,
+  benchTiers.forEach((t) => {
+    // Face (batter wall)
+    const height = t.yTop - t.yBottom;
+    const centerY = (t.yTop + t.yBottom) / 2;
+    const faceGeo = new THREE.CylinderGeometry(t.rTop, t.rToe, height, 64, 1, true);
+    const faceMat = new THREE.MeshStandardMaterial({
+      color: t.faceColor,
+      roughness: 0.88,
+      metalness: 0.12,
       flatShading: true,
+      side: THREE.DoubleSide,
     });
-    const benchMesh = new THREE.Mesh(benchGeo, benchMat);
-    benchMesh.position.y = b.y;
-    benchMesh.receiveShadow = true;
-    scene.add(benchMesh);
+    const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+    faceMesh.position.y = centerY;
+    faceMesh.receiveShadow = true;
+    faceMesh.castShadow = true;
+    pitGroup.add(faceMesh);
 
-    // Bench Berm Floor
-    const bermGeo = new THREE.RingGeometry(b.radiusBottom - 0.5, b.radiusTop + 0.5, 48);
-    const bermMat = new THREE.MeshStandardMaterial({ color: 0x4a3d32, roughness: 0.9, side: THREE.DoubleSide });
-    const bermMesh = new THREE.Mesh(bermGeo, bermMat);
-    bermMesh.rotation.x = -Math.PI / 2;
-    bermMesh.position.y = b.y - b.height / 2;
-    bermMesh.receiveShadow = true;
-    scene.add(bermMesh);
+    // Horizontal working berm shelf (if not bottom)
+    if (t.rBermIn > 0) {
+      const bermGeo = new THREE.RingGeometry(t.rBermIn, t.rToe, 64);
+      const bermMat = new THREE.MeshStandardMaterial({
+        color: t.bermColor,
+        roughness: 0.94,
+        side: THREE.DoubleSide,
+      });
+      const bermMesh = new THREE.Mesh(bermGeo, bermMat);
+      bermMesh.rotation.x = -Math.PI / 2;
+      bermMesh.position.y = t.yBottom;
+      bermMesh.receiveShadow = true;
+      pitGroup.add(bermMesh);
+    }
   });
+
+  // Pit Floor (Дно карьера)
+  const floorGeo = new THREE.CircleGeometry(12, 64);
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0x241c16,
+    roughness: 0.95,
+    side: THREE.DoubleSide,
+  });
+  const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+  floorMesh.rotation.x = -Math.PI / 2;
+  floorMesh.position.y = -12;
+  floorMesh.receiveShadow = true;
+  pitGroup.add(floorMesh);
+
+  // Sump Pool (Водоотливной зумпф) - reflective turquoise mine water at bottom
+  const sumpGeo = new THREE.CircleGeometry(6, 32);
+  const sumpMat = new THREE.MeshStandardMaterial({
+    color: 0x155e75,
+    roughness: 0.25,
+    metalness: 0.7,
+    side: THREE.DoubleSide,
+  });
+  const sumpMesh = new THREE.Mesh(sumpGeo, sumpMat);
+  sumpMesh.rotation.x = -Math.PI / 2;
+  sumpMesh.position.y = -11.8;
+  pitGroup.add(sumpMesh);
+
+  scene.add(pitGroup);
+}
+
+// Generate smooth, flat 3D road ribbon along a CatmullRomCurve3
+function createRoadRibbon(curve, width = 5.6, yOffset = 0.25, segments = 100) {
+  const points = curve.getSpacedPoints(segments);
+  const positions = [];
+  const uvs = [];
+  const indices = [];
+
+  for (let i = 0; i <= segments; i++) {
+    const p = points[i];
+    const t = Math.min(0.999, Math.max(0.001, i / segments));
+    const tangent = curve.getTangentAt(t).normalize();
+    const up = new THREE.Vector3(0, 1, 0);
+    const normal = new THREE.Vector3().crossVectors(tangent, up).normalize();
+
+    const left = new THREE.Vector3().copy(p).addScaledVector(normal, width / 2);
+    const right = new THREE.Vector3().copy(p).addScaledVector(normal, -width / 2);
+
+    left.y += yOffset;
+    right.y += yOffset;
+
+    positions.push(left.x, left.y, left.z);
+    positions.push(right.x, right.y, right.z);
+
+    const v = i / segments;
+    uvs.push(0, v, 1, v);
+
+    if (i < segments) {
+      const base = i * 2;
+      indices.push(base, base + 1, base + 2);
+      indices.push(base + 1, base + 3, base + 2);
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
 }
 
 function buildRoads() {
-  // Route EX-01 (Bench +280m) to Crusher
+  // Route EX-01 (Bench +280m at Y=19) to Crusher (Y=35)
   const ptsEX1 = [
     LOCATIONS.ex1.clone(),
-    new THREE.Vector3(70, 22, 60),
-    new THREE.Vector3(95, 26, 20),
-    new THREE.Vector3(105, 30, -10),
+    new THREE.Vector3(65, 22, 58),
+    new THREE.Vector3(92, 26, 25),
+    new THREE.Vector3(118, 30, -8),
+    new THREE.Vector3(132, 34, -28),
     LOCATIONS.crusher.clone(),
   ];
   routeEX1 = new THREE.CatmullRomCurve3(ptsEX1);
 
-  // Route EX-02 (Bench +220m) to Crusher (Ramp +240m section)
+  // Route EX-02 (Bench +220m at Y=3) to Crusher (Y=35)
   const ptsEX2 = [
     LOCATIONS.ex2.clone(),
-    new THREE.Vector3(-30, 8, 40),
-    new THREE.Vector3(20, 15, 60),
-    new THREE.Vector3(70, 22, 60),
-    new THREE.Vector3(95, 26, 20),
-    new THREE.Vector3(105, 30, -10),
+    new THREE.Vector3(-10, 8, 36),
+    new THREE.Vector3(20, 14, 62),
+    new THREE.Vector3(65, 22, 58),
+    new THREE.Vector3(92, 26, 25),
+    new THREE.Vector3(118, 30, -8),
+    new THREE.Vector3(132, 34, -28),
     LOCATIONS.crusher.clone(),
   ];
   routeEX2 = new THREE.CatmullRomCurve3(ptsEX2);
 
-  // Route EX-03 (Waste Bench +320m) to Waste Dump
+  // Route EX-03 (Waste Bench +320m at Y=28) to Waste Dump (Y=35)
   const ptsEX3 = [
     LOCATIONS.ex3.clone(),
-    new THREE.Vector3(-100, 32, -80),
+    new THREE.Vector3(-118, 31, -85),
+    new THREE.Vector3(-142, 35, -105),
     LOCATIONS.waste_dump.clone(),
   ];
   routeEX3 = new THREE.CatmullRomCurve3(ptsEX3);
 
-  // Bypass detour route around collapsed ramp
+  // Bypass detour route around collapsed ramp section
   const ptsDetour = [
     LOCATIONS.ex2.clone(),
-    new THREE.Vector3(-50, 10, -10),
-    new THREE.Vector3(-20, 20, -50),
-    new THREE.Vector3(30, 28, -60),
-    new THREE.Vector3(80, 34, -50),
+    new THREE.Vector3(-30, 9, -20),
+    new THREE.Vector3(-12, 17, -55),
+    new THREE.Vector3(32, 25, -70),
+    new THREE.Vector3(82, 32, -62),
+    new THREE.Vector3(122, 35, -52),
     LOCATIONS.crusher.clone(),
   ];
   routeDetour = new THREE.CatmullRomCurve3(ptsDetour);
 
-  // Draw main road tube on scene
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0x2d241e, roughness: 0.95 });
-  const tube1 = new THREE.Mesh(new THREE.TubeGeometry(routeEX2, 64, 2.8, 8, false), roadMat);
-  tube1.position.y += 0.3;
-  tube1.receiveShadow = true;
-  scene.add(tube1);
+  const roadMat = new THREE.MeshStandardMaterial({
+    color: 0x383028, // Compacted quarry haul road surface
+    roughness: 0.95,
+    side: THREE.DoubleSide,
+  });
 
-  const tube3 = new THREE.Mesh(new THREE.TubeGeometry(routeEX3, 32, 2.8, 8, false), roadMat);
-  tube3.position.y += 0.3;
-  tube3.receiveShadow = true;
-  scene.add(tube3);
+  // Main Ramp Road (EX-02 & EX-01 to Crusher)
+  const roadGeo2 = createRoadRibbon(routeEX2, 5.8, 0.25, 100);
+  const roadMesh2 = new THREE.Mesh(roadGeo2, roadMat);
+  roadMesh2.receiveShadow = true;
+  scene.add(roadMesh2);
+
+  // EX-03 to Waste Dump Road
+  const roadGeo3 = createRoadRibbon(routeEX3, 5.8, 0.25, 50);
+  const roadMesh3 = new THREE.Mesh(roadGeo3, roadMat);
+  roadMesh3.receiveShadow = true;
+  scene.add(roadMesh3);
+
+  // Detour Road (Bypass around collapsed ramp section)
+  const detourMat = new THREE.MeshStandardMaterial({
+    color: 0x42382e,
+    roughness: 0.95,
+    side: THREE.DoubleSide,
+  });
+  const detourGeo = createRoadRibbon(routeDetour, 5.4, 0.22, 90);
+  const detourMesh = new THREE.Mesh(detourGeo, detourMat);
+  detourMesh.receiveShadow = true;
+  scene.add(detourMesh);
+
+  // Dynamic Rockslide debris cluster (visible when road_blocked scenario is active)
+  rockslideGroup = new THREE.Group();
+  rockslideGroup.position.set(20, 14, 62);
+  const boulderMat = new THREE.MeshStandardMaterial({ color: 0x5a483a, roughness: 0.92, flatShading: true });
+  for (let b = 0; b < 9; b++) {
+    const r = 1.0 + Math.random() * 1.5;
+    const boulder = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 1), boulderMat);
+    boulder.position.set((Math.random() - 0.5) * 5, r * 0.6, (Math.random() - 0.5) * 4);
+    boulder.rotation.set(Math.random() * 3, Math.random() * 3, 0);
+    boulder.castShadow = true;
+    rockslideGroup.add(boulder);
+  }
+  // Hazard warning cones
+  const coneMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.4 });
+  for (let c = -2; c <= 2; c += 2) {
+    const barrier = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.4, 8), coneMat);
+    barrier.position.set(c, 0.7, 3);
+    rockslideGroup.add(barrier);
+  }
+  rockslideGroup.visible = false;
+  scene.add(rockslideGroup);
 }
 
 function buildInfrastructure() {
-  // Primary Gyratory Crusher building
+  // 1. Primary Gyratory Crusher building at LOCATIONS.crusher (145, 35, -45)
+  // Sits properly on the surface rim (+350m) overlooking the open pit
   const crusherGroup = new THREE.Group();
   crusherGroup.position.copy(LOCATIONS.crusher);
 
   const buildingMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.4, roughness: 0.5 });
-  const building = new THREE.Mesh(new THREE.BoxGeometry(16, 12, 18), buildingMat);
-  building.position.y = 6;
+  const building = new THREE.Mesh(new THREE.BoxGeometry(18, 14, 20), buildingMat);
+  building.position.y = 7;
   building.castShadow = true;
   crusherGroup.add(building);
 
-  // Dump hopper
-  const hopperMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.2, roughness: 0.6 });
-  const hopper = new THREE.Mesh(new THREE.CylinderGeometry(5, 2.5, 4, 16), hopperMat);
-  hopper.position.set(-6, 8, 0);
+  // Dump hopper pocket with yellow guide beams where trucks tip ore
+  const hopperMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.3, roughness: 0.5 });
+  const hopper = new THREE.Mesh(new THREE.CylinderGeometry(5.5, 3.0, 5, 16), hopperMat);
+  hopper.position.set(-7, 9, 0);
   crusherGroup.add(hopper);
 
-  // Conveyor bridge leading to surge stockpile
-  const conveyorMat = new THREE.MeshStandardMaterial({ color: 0x64748b });
-  const conveyor = new THREE.Mesh(new THREE.BoxGeometry(32, 2, 2), conveyorMat);
-  conveyor.position.set(16, 10, 5);
-  conveyor.rotation.z = -0.15;
+  // Overhead primary conveyor truss towards stockpile
+  const conveyorMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.5, roughness: 0.4 });
+  const conveyor = new THREE.Mesh(new THREE.BoxGeometry(34, 2.5, 2.5), conveyorMat);
+  conveyor.position.set(16, 11, 4);
+  conveyor.rotation.z = -0.12;
+  conveyor.rotation.y = 0.28;
+  conveyor.castShadow = true;
   crusherGroup.add(conveyor);
 
   scene.add(crusherGroup);
 
-  // Surge Stockpile (Ore cone)
-  const stockpileMat = new THREE.MeshStandardMaterial({ color: 0x5c4d3c, roughness: 0.9 });
-  const stockpile = new THREE.Mesh(new THREE.ConeGeometry(18, 14, 24), stockpileMat);
-  stockpile.position.set(LOCATIONS.stockpile.x, LOCATIONS.stockpile.y + 7, LOCATIONS.stockpile.z);
+  // 2. Surge Stockpile at LOCATIONS.stockpile (175, 35, -35)
+  const stockpileMat = new THREE.MeshStandardMaterial({ color: 0x635240, roughness: 0.95 });
+  const stockpile = new THREE.Mesh(new THREE.ConeGeometry(20, 16, 24), stockpileMat);
+  stockpile.position.set(LOCATIONS.stockpile.x, LOCATIONS.stockpile.y + 8, LOCATIONS.stockpile.z);
   stockpile.castShadow = true;
+  stockpile.receiveShadow = true;
   scene.add(stockpile);
 
-  // Waste Dump (terraced mound)
-  const wasteMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.95 });
-  const wasteDump = new THREE.Mesh(new THREE.CylinderGeometry(28, 42, 16, 24), wasteMat);
-  wasteDump.position.set(LOCATIONS.waste_dump.x, LOCATIONS.waste_dump.y + 8, LOCATIONS.waste_dump.z);
-  wasteDump.castShadow = true;
-  scene.add(wasteDump);
+  // 3. Engineered Terraced Waste Dump at LOCATIONS.waste_dump (-170, 35, -120)
+  // Natural terraced overburden dump in realistic rock tones (not an inverted blue cone)
+  const wasteDumpGroup = new THREE.Group();
+  wasteDumpGroup.position.copy(LOCATIONS.waste_dump);
 
-  // Slope Stability Radar (SSR)
+  const wasteMatTier1 = new THREE.MeshStandardMaterial({ color: 0x54493e, roughness: 0.95, flatShading: true });
+  const tier1 = new THREE.Mesh(new THREE.CylinderGeometry(40, 52, 9, 28), wasteMatTier1);
+  tier1.position.y = 4.5;
+  tier1.castShadow = true;
+  tier1.receiveShadow = true;
+  wasteDumpGroup.add(tier1);
+
+  const wasteMatTier2 = new THREE.MeshStandardMaterial({ color: 0x483e35, roughness: 0.95, flatShading: true });
+  const tier2 = new THREE.Mesh(new THREE.CylinderGeometry(24, 34, 8, 24), wasteMatTier2);
+  tier2.position.y = 13;
+  tier2.castShadow = true;
+  tier2.receiveShadow = true;
+  wasteDumpGroup.add(tier2);
+
+  scene.add(wasteDumpGroup);
+
+  // 4. Slope Stability Radar (SSR) at LOCATIONS.radar (0, 35, -150)
   const radarGroup = new THREE.Group();
   radarGroup.position.copy(LOCATIONS.radar);
 
-  const tripod = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 2, 6, 6), buildingMat);
+  const tripod = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 2.5, 6, 6), buildingMat);
   tripod.position.y = 3;
   radarGroup.add(tripod);
 
-  const dish = new THREE.Mesh(new THREE.SphereGeometry(3, 16, 16, 0, Math.PI), hopperMat);
+  const dish = new THREE.Mesh(new THREE.SphereGeometry(3.5, 16, 16, 0, Math.PI), hopperMat);
   dish.rotation.x = Math.PI / 2;
-  dish.position.y = 6;
+  dish.position.y = 6.5;
   radarGroup.add(dish);
 
-  // Radar Scan Beam Fan
-  const beamGeo = new THREE.ConeGeometry(40, 90, 16, 1, true);
+  // Radar Scan Beam Fan overlooking the active quarry crater
+  const beamGeo = new THREE.ConeGeometry(55, 130, 20, 1, true);
   const beamMat = new THREE.MeshBasicMaterial({
     color: 0x10b981,
     transparent: true,
-    opacity: 0.15,
+    opacity: 0.16,
     wireframe: true,
     side: THREE.DoubleSide,
   });
   radarBeamMesh = new THREE.Mesh(beamGeo, beamMat);
-  radarBeamMesh.rotation.x = -Math.PI / 2.3;
-  radarBeamMesh.position.set(0, 6, 45);
+  radarBeamMesh.rotation.x = -Math.PI / 2.2;
+  radarBeamMesh.position.set(0, 6.5, 65);
   radarGroup.add(radarBeamMesh);
 
   scene.add(radarGroup);
@@ -266,21 +451,32 @@ function buildInfrastructure() {
 
 function createShovelMesh(name, color) {
   const shovel = new THREE.Group();
-  const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
-  const tracks = new THREE.Mesh(new THREE.BoxGeometry(7, 2, 9), baseMat);
-  tracks.position.y = 1;
+  const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+  const tracks = new THREE.Mesh(new THREE.BoxGeometry(8, 2.2, 10), baseMat);
+  tracks.position.y = 1.1;
+  tracks.castShadow = true;
+  tracks.receiveShadow = true;
   shovel.add(tracks);
 
-  const houseMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.3, roughness: 0.6 });
-  const house = new THREE.Mesh(new THREE.BoxGeometry(6, 4.5, 7), houseMat);
-  house.position.set(0, 4, -0.5);
+  const houseMat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.35, roughness: 0.55 });
+  const house = new THREE.Mesh(new THREE.BoxGeometry(7, 5, 8), houseMat);
+  house.position.set(0, 4.6, -0.5);
   house.castShadow = true;
+  house.receiveShadow = true;
   shovel.add(house);
 
-  const boomMat = new THREE.MeshStandardMaterial({ color: 0xfacc15 });
-  const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 12, 8), boomMat);
+  // Cab with glass
+  const cabMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.8, roughness: 0.2 });
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.5, 2.5), cabMat);
+  cab.position.set(2.8, 5.5, 2.2);
+  shovel.add(cab);
+
+  // Heavy boom
+  const boomMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
+  const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.9, 14, 8), boomMat);
   boom.rotation.x = -Math.PI / 4;
-  boom.position.set(0, 7, 5);
+  boom.position.set(0, 8, 6);
+  boom.castShadow = true;
   shovel.add(boom);
 
   return shovel;
@@ -289,13 +485,15 @@ function createShovelMesh(name, color) {
 function createTruckMesh() {
   const truck = new THREE.Group();
 
-  // Chassis
+  // Heavy duty chassis frame
   const chassisMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.7 });
   const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.2, 8.5), chassisMat);
   chassis.position.y = 2.0;
+  chassis.castShadow = true;
+  chassis.receiveShadow = true;
   truck.add(chassis);
 
-  // Yellow Cab
+  // Yellow CAT Cab
   const cabMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
   const cab = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.8, 2.2), cabMat);
   cab.position.set(-1.0, 3.5, 2.5);
@@ -307,29 +505,31 @@ function createTruckMesh() {
   const box = new THREE.Mesh(new THREE.BoxGeometry(4.4, 2.2, 6.0), boxMat);
   box.position.set(0, 3.4, -1.0);
   box.castShadow = true;
+  box.receiveShadow = true;
   truck.add(box);
 
-  // Ore in Dump Box
+  // Dynamic Ore in Dump Box
   const oreMat = new THREE.MeshStandardMaterial({ color: 0x3d7068, roughness: 0.9 });
   const ore = new THREE.Mesh(new THREE.BoxGeometry(4.0, 1.5, 5.6), oreMat);
   ore.position.set(0, 3.8, -1.0);
   ore.name = "oreLoad";
   truck.add(ore);
 
-  // 6 Massive Haul Wheels
+  // 6 Massive Haul Wheels (CAT 793F 227-tonne)
   const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 });
-  const wheelGeo = new THREE.CylinderGeometry(1.4, 1.4, 0.9, 12);
+  const wheelGeo = new THREE.CylinderGeometry(1.4, 1.4, 0.9, 14);
   wheelGeo.rotateZ(Math.PI / 2);
 
   const wheelPositions = [
-    [-2.2, 1.4, 2.6], [2.2, 1.4, 2.6],   // Front
-    [-2.2, 1.4, -1.5], [2.2, 1.4, -1.5], // Rear Left/Right outer
-    [-2.2, 1.4, -3.0], [2.2, 1.4, -3.0], // Rear Left/Right inner
+    [-2.2, 1.4, 2.6], [2.2, 1.4, 2.6],   // Front left & right
+    [-2.2, 1.4, -1.5], [2.2, 1.4, -1.5], // Rear outer
+    [-2.2, 1.4, -3.0], [2.2, 1.4, -3.0], // Rear inner
   ];
 
   wheelPositions.forEach(pos => {
     const w = new THREE.Mesh(wheelGeo, wheelMat);
     w.position.set(...pos);
+    w.castShadow = true;
     truck.add(w);
   });
 
@@ -337,18 +537,18 @@ function createTruckMesh() {
 }
 
 function buildEquipment() {
-  // Shovels
-  shovelMeshes["excavator-01"] = createShovelMesh("EX-01", 0x0284c7); // High-grade
+  // Excavators on Benches
+  shovelMeshes["excavator-01"] = createShovelMesh("EX-01", 0x0284c7); // High-grade bench +280m
   shovelMeshes["excavator-01"].position.copy(LOCATIONS.ex1);
   shovelMeshes["excavator-01"].rotation.y = -Math.PI / 3;
   scene.add(shovelMeshes["excavator-01"]);
 
-  shovelMeshes["excavator-02"] = createShovelMesh("EX-02", 0xe11d48); // ROM
+  shovelMeshes["excavator-02"] = createShovelMesh("EX-02", 0xe11d48); // ROM bench +220m
   shovelMeshes["excavator-02"].position.copy(LOCATIONS.ex2);
   shovelMeshes["excavator-02"].rotation.y = Math.PI / 4;
   scene.add(shovelMeshes["excavator-02"]);
 
-  shovelMeshes["excavator-03"] = createShovelMesh("EX-03", 0x64748b); // Waste
+  shovelMeshes["excavator-03"] = createShovelMesh("EX-03", 0x64748b); // Waste bench +320m
   shovelMeshes["excavator-03"].position.copy(LOCATIONS.ex3);
   shovelMeshes["excavator-03"].rotation.y = Math.PI / 1.5;
   scene.add(shovelMeshes["excavator-03"]);
@@ -392,7 +592,7 @@ function updateUI(data) {
     const el = document.getElementById("val-feed-grade");
     el.innerText = `${grade.toFixed(3)} %`;
 
-    // Color grade indicator: green if in band [0.44, 0.52], red/yellow otherwise
+    // Color grade indicator: blue/green if in band [0.44, 0.52], red/yellow otherwise
     if (grade >= 0.44 && grade <= 0.52) {
       el.style.color = "#38bdf8";
     } else {
@@ -485,6 +685,27 @@ function update3D(data) {
     }
   }
 
+  // Shovel EX-02 dilution indicator
+  if (shovelMeshes["excavator-02"]) {
+    if (whatif.dilution) {
+      shovelMeshes["excavator-02"].children[1].material.color.setHex(0xca8a04);
+    } else {
+      shovelMeshes["excavator-02"].children[1].material.color.setHex(0xe11d48);
+    }
+  }
+
+  // Road Blockage Scenario: toggle rockslide cluster and radar alert beam
+  if (rockslideGroup) {
+    rockslideGroup.visible = !!whatif.road_blocked;
+  }
+  if (radarBeamMesh) {
+    if (whatif.road_blocked) {
+      radarBeamMesh.material.color.setHex(0xef4444); // Red alert sweep
+    } else {
+      radarBeamMesh.material.color.setHex(0x10b981); // Green nominal sweep
+    }
+  }
+
   // Update truck positions along curves
   for (let i = 1; i <= 5; i++) {
     const id = `truck-0${i}`;
@@ -525,7 +746,7 @@ function update3D(data) {
     const tangent = curve.getTangentAt(tNorm);
 
     mesh.position.copy(pos);
-    mesh.position.y += 0.8; // Elevation above road surface
+    mesh.position.y += 0.35; // Tires sitting firmly on road surface
 
     if (state === "returning") {
       tangent.negate();
@@ -534,7 +755,7 @@ function update3D(data) {
 
     // Update Chase Camera if actively following this truck
     if (currentCameraMode === id) {
-      const offset = new THREE.Vector3(0, 8, -18).applyQuaternion(mesh.quaternion);
+      const offset = new THREE.Vector3(0, 8, -20).applyQuaternion(mesh.quaternion);
       camera.position.copy(mesh.position).add(offset);
       controls.target.copy(mesh.position);
     }
@@ -566,6 +787,7 @@ async function resetWhatIf() {
 
 function logEvent(text, type = "normal") {
   const box = document.getElementById("dispatch-log");
+  if (!box) return;
   const time = new Date().toLocaleTimeString("ru-RU", { hour12: false });
   const item = document.createElement("div");
   item.className = `log-item ${type}`;
@@ -579,16 +801,16 @@ function setCameraView(mode) {
   document.querySelectorAll(".cam-btn").forEach(b => b.classList.remove("active"));
 
   if (mode === "orbit") {
-    camera.position.set(160, 140, 220);
-    controls.target.set(0, 10, 0);
+    camera.position.set(160, 130, 190);
+    controls.target.set(0, 8, 0);
   } else if (mode === "crusher") {
-    camera.position.set(150, 60, -10);
+    camera.position.set(175, 50, -18);
     controls.target.copy(LOCATIONS.crusher);
   } else if (mode === "ex1") {
-    camera.position.set(65, 35, 105);
+    camera.position.set(65, 32, 105);
     controls.target.copy(LOCATIONS.ex1);
   } else if (mode === "ex2") {
-    camera.position.set(-35, 20, 45);
+    camera.position.set(-8, 16, 38);
     controls.target.copy(LOCATIONS.ex2);
   }
 }
