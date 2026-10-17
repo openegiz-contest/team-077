@@ -23,10 +23,10 @@ let lastTimestamp = 0;
 const LOCATIONS = {
   crusher: new THREE.Vector3(82, 35, -128),
   stockpile: new THREE.Vector3(124, 35, -138),
-  waste_dump: new THREE.Vector3(-125, 42.0, -120), // Flat elevated tipping platform
-  ex1: new THREE.Vector3(72, 19, 65),              // Bench +280m High-grade Cu (0.64%)
-  ex2: new THREE.Vector3(-28, 3, 30),              // Bench +220m ROM Porphyry Cu (0.40%)
-  ex3: new THREE.Vector3(-85, 28, -85),            // Bench +320m Waste Overburden
+  waste_dump: new THREE.Vector3(-136, 42.0, -132), // Flat elevated tipping platform crest
+  ex1: new THREE.Vector3(78.5, 19.0, 66.0),        // Bench +280m High-grade Cu (at toe of bench face)
+  ex2: new THREE.Vector3(-34.5, 3.0, 31.5),        // Bench +220m ROM Porphyry Cu (at toe of bench face)
+  ex3: new THREE.Vector3(-88.0, 28.0, -88.0),      // Bench +320m Waste Overburden
   radar: new THREE.Vector3(0, 35, -155),           // North rim Slope Stability Radar (SSR)
 };
 
@@ -333,10 +333,10 @@ function buildRoads() {
 
   // 3. Route EX-03 to Waste Dump: smoothly ascends from Bench +320m (Y=28) up onto the flat tipping pad at Y=42
   const ptsEX3 = [
-    LOCATIONS.ex3.clone(),
+    new THREE.Vector3(-82.0, 28.0, -82.0), // Loading pocket in front of EX-03
     new THREE.Vector3(-104, 32, -96),
-    new THREE.Vector3(-114, 36.5, -106),
-    new THREE.Vector3(-120, 40.5, -114),
+    new THREE.Vector3(-116, 37.0, -108),
+    new THREE.Vector3(-126, 41.5, -120),
     LOCATIONS.waste_dump.clone(),
   ];
   routeEX3 = new THREE.CatmullRomCurve3(ptsEX3);
@@ -462,18 +462,56 @@ function buildInfrastructure() {
   crusherGroup.add(curbL);
   crusherGroup.add(curbR);
 
-  // 3D Lattice Overland Conveyor Bridge spanning from crusher to stockpile
-  // Starts at crusher discharge (16, 15, -4), ends at stockpile head (42, 18, -10)
+  // 3D Industrial Steel Truss Overland Conveyor Bridge spanning from crusher to stockpile
+  // Starts at crusher discharge (16, 15, -4), ends at stockpile head (43, 14, -11)
   const conveyorGroup = new THREE.Group();
   const trussMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.65, roughness: 0.35 });
-  const convBelt = new THREE.Mesh(new THREE.BoxGeometry(44, 2.4, 2.8), trussMat);
+  const steelMatDark = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5, roughness: 0.5 });
+  const yellowSafetyMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
+
+  // Main tubular conveyor gallery housing
+  const convBelt = new THREE.Mesh(new THREE.BoxGeometry(44, 1.8, 2.4), trussMat);
   convBelt.position.set(22, 16.5, -6);
   convBelt.rotation.z = -0.15;
   convBelt.rotation.y = -0.22;
   convBelt.castShadow = true;
   conveyorGroup.add(convBelt);
 
-  // Conveyor structural support bents (trestles anchored to ground)
+  // Arched weather hood along top of conveyor gallery
+  const hood = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, 44, 12, 1, false, 0, Math.PI), steelMatDark);
+  hood.rotation.z = Math.PI / 2 - 0.15;
+  hood.rotation.y = -0.22;
+  hood.position.set(22, 17.5, -6);
+  conveyorGroup.add(hood);
+
+  // Structural lattice truss framing along conveyor gallery sides
+  const trussFrameGeo = new THREE.BufferGeometry();
+  const trussPoints = [];
+  const spanLen = 42;
+  const numBays = 14;
+  for (let b = 0; b <= numBays; b++) {
+    const bx = -spanLen / 2 + (b * spanLen) / numBays;
+    // Left & right vertical struts
+    trussPoints.push(bx, -1.0, 1.25, bx, 1.0, 1.25);
+    trussPoints.push(bx, -1.0, -1.25, bx, 1.0, -1.25);
+    if (b < numBays) {
+      const nbx = -spanLen / 2 + ((b + 1) * spanLen) / numBays;
+      // Side diagonal cross-braces
+      trussPoints.push(bx, -1.0, 1.25, nbx, 1.0, 1.25);
+      trussPoints.push(bx, -1.0, -1.25, nbx, 1.0, -1.25);
+      // Top and bottom cross-ties
+      trussPoints.push(bx, 1.0, -1.25, bx, 1.0, 1.25);
+      trussPoints.push(bx, -1.0, -1.25, bx, -1.0, 1.25);
+    }
+  }
+  trussFrameGeo.setAttribute("position", new THREE.Float32BufferAttribute(trussPoints, 3));
+  const trussLines = new THREE.LineSegments(trussFrameGeo, new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 2 }));
+  trussLines.position.set(22, 16.5, -6);
+  trussLines.rotation.z = -0.15;
+  trussLines.rotation.y = -0.22;
+  conveyorGroup.add(trussLines);
+
+  // Conveyor structural support bents (A-frame trestles anchored to ground)
   const bentMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.5, roughness: 0.4 });
   const bent1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 14, 8), bentMat);
   bent1.position.set(18, 7.0, -4.5);
@@ -484,6 +522,12 @@ function buildInfrastructure() {
   bent2.position.set(32, 8.0, -8.0);
   bent2.castShadow = true;
   conveyorGroup.add(bent2);
+
+  // Transfer tower / discharge chute at stockpile head
+  const dischargeChute = new THREE.Mesh(new THREE.BoxGeometry(3.6, 4.2, 3.4), yellowSafetyMat);
+  dischargeChute.position.set(43, 13.5, -11.0);
+  dischargeChute.castShadow = true;
+  conveyorGroup.add(dischargeChute);
 
   crusherGroup.add(conveyorGroup);
   scene.add(crusherGroup);
@@ -496,19 +540,26 @@ function buildInfrastructure() {
   stockpile.receiveShadow = true;
   scene.add(stockpile);
 
-  // 3. Terraced Waste Dump with flat, elevated tipping platform at LOCATIONS.waste_dump (-125, 42.0, -120)
+  // 3. Terraced Waste Dump with flat, elevated tipping platform at LOCATIONS.waste_dump (-136, 42.0, -132)
   const wasteDumpGroup = new THREE.Group();
   wasteDumpGroup.position.set(LOCATIONS.waste_dump.x, 35, LOCATIONS.waste_dump.z);
 
-  // Lower embankment tier (from Y=35 to Y=42)
+  // Lower foundation embankment tier (from Y=28 to Y=35)
   const wasteMat1 = new THREE.MeshStandardMaterial({ color: 0x584c40, roughness: 0.95, flatShading: true });
-  const tier1 = new THREE.Mesh(new THREE.CylinderGeometry(46, 62, 7, 36), wasteMat1);
+  const tier0 = new THREE.Mesh(new THREE.CylinderGeometry(64, 82, 7, 36), wasteMat1);
+  tier0.position.y = -3.5;
+  tier0.castShadow = true;
+  tier0.receiveShadow = true;
+  wasteDumpGroup.add(tier0);
+
+  // Active upper embankment tier (from Y=35 to Y=42)
+  const tier1 = new THREE.Mesh(new THREE.CylinderGeometry(46, 64, 7, 36), wasteMat1);
   tier1.position.y = 3.5;
   tier1.castShadow = true;
   tier1.receiveShadow = true;
   wasteDumpGroup.add(tier1);
 
-  // Flat top tipping platform (at Y=42, radius 46)
+  // Flat top tipping platform (at world Y=42.02, radius 46)
   const padGeo = new THREE.CircleGeometry(46, 36);
   const padMat = new THREE.MeshStandardMaterial({ color: 0x4f4438, roughness: 0.95, side: THREE.DoubleSide });
   const padMesh = new THREE.Mesh(padGeo, padMat);
@@ -518,36 +569,28 @@ function buildInfrastructure() {
   wasteDumpGroup.add(padMesh);
 
   // Safety windrow / wheel-stop bund (предохранительный вал) along the northern active tipping crest
-  const bundGeo = new THREE.TorusGeometry(43, 1.8, 8, 24, Math.PI * 0.7);
+  const bundGeo = new THREE.TorusGeometry(43, 1.8, 8, 24, Math.PI * 0.75);
   const bundMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.5 });
   const bundMesh = new THREE.Mesh(bundGeo, bundMat);
   bundMesh.rotation.x = Math.PI / 2;
-  bundMesh.rotation.z = Math.PI * 0.15;
+  bundMesh.rotation.z = Math.PI * 0.12;
   bundMesh.position.set(0, 7.8, 0);
   bundMesh.castShadow = true;
   wasteDumpGroup.add(bundMesh);
 
-  // Spotter cabin & solar lighting trailer on waste dump platform
+  // Spotter cabin & solar lighting trailer on south-west edge of waste dump platform
   const cabinMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4 });
   const cabin = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.8, 3.2), cabinMat);
-  cabin.position.set(22, 8.4, 10);
+  cabin.position.set(-24, 8.4, 22);
   cabin.castShadow = true;
   wasteDumpGroup.add(cabin);
 
-  // Lighting floodlight mast on dump platform
+  // Lighting floodlight mast on dump platform edge
   const mastMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.6 });
   const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 12, 8), mastMat);
-  mast.position.set(22, 13.0, 10);
+  mast.position.set(-24, 13.0, 22);
   mast.castShadow = true;
   wasteDumpGroup.add(mast);
-
-  // Secondary Spoil Mound (further back, progressive waste development)
-  const wasteMat2 = new THREE.MeshStandardMaterial({ color: 0x453b31, roughness: 0.95, flatShading: true });
-  const tier2 = new THREE.Mesh(new THREE.ConeGeometry(28, 14, 28), wasteMat2);
-  tier2.position.set(-20, 14.0, -18);
-  tier2.castShadow = true;
-  tier2.receiveShadow = true;
-  wasteDumpGroup.add(tier2);
 
   scene.add(wasteDumpGroup);
 
@@ -829,6 +872,16 @@ function createTruckMesh() {
   box.receiveShadow = true;
   truck.add(box);
 
+  // Exterior vertical reinforcement stiffeners along dump body sides
+  const ribMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.55 });
+  for (let rz = -3.8; rz <= 2.2; rz += 1.4) {
+    [-2.45, 2.45].forEach(rx => {
+      const rib = new THREE.Mesh(new THREE.BoxGeometry(0.16, 2.4, 0.28), ribMat);
+      rib.position.set(rx, 4.0, rz);
+      truck.add(rib);
+    });
+  }
+
   // Protective Rock Canopy (защитный козырек над кабиной)
   const canopy = new THREE.Mesh(new THREE.BoxGeometry(4.7, 0.6, 3.6), boxMat);
   canopy.position.set(0, 5.9, 2.8);
@@ -836,11 +889,11 @@ function createTruckMesh() {
   canopy.castShadow = true;
   truck.add(canopy);
 
-  // 4. Dynamic Ore Payload Heap in Dump Box
+  // 4. Dynamic Ore Payload Heap in Dump Box (scaled to crown realistically inside 4.8m body)
   const oreMat = new THREE.MeshStandardMaterial({ color: 0x3d7068, roughness: 0.92, flatShading: true });
-  const ore = new THREE.Mesh(new THREE.DodecahedronGeometry(2.6, 1), oreMat);
-  ore.scale.set(1.5, 0.8, 1.9);
-  ore.position.set(0, 4.8, -0.8);
+  const ore = new THREE.Mesh(new THREE.DodecahedronGeometry(1.85, 1), oreMat);
+  ore.scale.set(1.15, 0.72, 1.55);
+  ore.position.set(0, 4.6, -0.8);
   ore.name = "oreLoad";
   truck.add(ore);
 
@@ -874,20 +927,20 @@ function createTruckMesh() {
 }
 
 function buildEquipment() {
-  // Excavators on Benches (oriented facing into the rock face)
+  // Excavators on Benches (positioned against the bench face, digging into wall)
   shovelMeshes["excavator-01"] = createShovelMesh("EX-01", 0x0284c7); // High-grade bench +280m
   shovelMeshes["excavator-01"].position.copy(LOCATIONS.ex1);
-  shovelMeshes["excavator-01"].rotation.y = Math.PI * 0.8; // Digging into south-east wall
+  shovelMeshes["excavator-01"].rotation.y = Math.PI * 0.8; // Digging into south-east wall, bucket swung toward loading pocket
   scene.add(shovelMeshes["excavator-01"]);
 
   shovelMeshes["excavator-02"] = createShovelMesh("EX-02", 0xb91c1c); // ROM bench +220m
   shovelMeshes["excavator-02"].position.copy(LOCATIONS.ex2);
-  shovelMeshes["excavator-02"].rotation.y = -Math.PI * 0.4; // Digging into south-west wall
+  shovelMeshes["excavator-02"].rotation.y = -Math.PI * 0.4; // Digging into south-west wall, bucket swung toward loading pocket
   scene.add(shovelMeshes["excavator-02"]);
 
   shovelMeshes["excavator-03"] = createShovelMesh("EX-03", 0x475569); // Waste bench +320m
   shovelMeshes["excavator-03"].position.copy(LOCATIONS.ex3);
-  shovelMeshes["excavator-03"].rotation.y = -Math.PI * 0.7; // Digging into north-west wall
+  shovelMeshes["excavator-03"].rotation.y = -Math.PI * 0.75; // Digging into north-west wall
   scene.add(shovelMeshes["excavator-03"]);
 
   // 5 CAT 793F Haul Trucks
@@ -969,41 +1022,34 @@ function initDustSystem() {
   scene.add(dustPoints);
 }
 
-function emitDustPuff(truckMesh, isReturning) {
-  // Find an inactive particle from the pool
-  let p = null;
-  let pIdx = -1;
-  for (let i = 0; i < DUST_COUNT; i++) {
-    if (!dustParticles[i].active) {
-      p = dustParticles[i];
-      pIdx = i;
-      break;
-    }
-  }
-  if (!p) return;
+let dustPoolIndex = 0;
+
+function emitDustPuff(truckMesh) {
+  const pIdx = dustPoolIndex;
+  dustPoolIndex = (dustPoolIndex + 1) % DUST_COUNT;
+  const p = dustParticles[pIdx];
 
   const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(truckMesh.quaternion);
   const right = new THREE.Vector3(1, 0, 0).applyQuaternion(truckMesh.quaternion);
 
-  // Position puff behind rear wheels
-  const rearOffset = isReturning ? 3.8 : -3.8;
-  const sideOffset = (Math.random() - 0.5) * 3.6;
+  // Position puff behind rear dual wheels (rear axle at local z = -2.5)
+  const rearOffset = -3.6;
+  const sideOffset = (Math.random() - 0.5) * 3.4;
   const spawnPos = truckMesh.position.clone()
     .addScaledVector(forward, rearOffset)
     .addScaledVector(right, sideOffset);
-  spawnPos.y += 0.2;
+  spawnPos.y += 0.25;
 
   dustPositions[pIdx * 3] = spawnPos.x;
   dustPositions[pIdx * 3 + 1] = spawnPos.y;
   dustPositions[pIdx * 3 + 2] = spawnPos.z;
 
   // Velocity: backward slipstream drift + gentle upward buoyancy
-  const drift = forward.clone().multiplyScalar(isReturning ? 0.6 : -0.6);
-  p.vx = drift.x * 0.8 + (Math.random() - 0.5) * 0.3;
-  p.vy = 0.4 + Math.random() * 0.5;
-  p.vz = drift.z * 0.8 + (Math.random() - 0.5) * 0.3;
+  p.vx = -forward.x * 0.55 + (Math.random() - 0.5) * 0.25;
+  p.vy = 0.35 + Math.random() * 0.45;
+  p.vz = -forward.z * 0.55 + (Math.random() - 0.5) * 0.25;
   p.life = 1.0;
-  p.maxLife = 1.1 + Math.random() * 0.5;
+  p.maxLife = 1.2 + Math.random() * 0.5;
   p.active = true;
 }
 
@@ -1207,10 +1253,11 @@ function update3D(data) {
       routeKm = 2.8;
     } else if (whatif.road_blocked) {
       curve = routeDetour;
-      routeKm = (i === 1 || i === 2) ? 3.6 + 1.4 : 4.2 + 1.4;
+      const baseDist = (i === 1 || i === 2) && !whatif.ex1_failure ? 3.6 : 4.2;
+      routeKm = baseDist + 1.4;
     } else if (i === 1 || i === 2) {
-      curve = whatif.ex1_failure ? routeDetour : routeEX1;
-      routeKm = 3.6;
+      curve = whatif.ex1_failure ? routeEX2 : routeEX1;
+      routeKm = whatif.ex1_failure ? 4.2 : 3.6;
     }
 
     // State transition handling
@@ -1304,27 +1351,31 @@ function setCameraView(mode) {
     camera.position.set(-65, 165, 245);
     controls.target.set(10, 8, -15);
   } else if (mode === "crusher") {
-    // 3/4 view of the crusher dump bay, conveyor bridge, and incoming trucks
-    camera.position.set(45, 58, -80);
-    controls.target.set(95, 38, -132);
+    // 3/4 industrial view of the crusher dump bay, conveyor bridge, and incoming trucks
+    camera.position.set(50, 48, -90);
+    controls.target.set(88, 38, -130);
   } else if (mode === "ex1") {
     // Front 3/4 working face view of Shovel EX-01 scooping high-grade copper
-    camera.position.set(45, 28, 45);
-    controls.target.set(72, 20, 65);
+    camera.position.set(50, 26, 44);
+    controls.target.set(78, 20, 66);
   } else if (mode === "ex2") {
     // Front 3/4 working face view of Shovel EX-02 on bench +220m
-    camera.position.set(-48, 14, 46);
-    controls.target.set(-28, 4, 30);
+    camera.position.set(-60, 16, 52);
+    controls.target.set(-34, 5, 31);
   } else if (mode === "waste") {
-    // Panoramic view of waste dump tipping deck, truck-05, and safety bund
-    camera.position.set(-145, 52, -85);
-    controls.target.set(-118, 38, -112);
+    // Panoramic view along the approach ramp down onto the wide elevated tipping deck & truck-05
+    camera.position.set(-86, 62, -86);
+    controls.target.set(-130, 42, -126);
   } else if (mode.startsWith("truck")) {
     const mesh = truckMeshes[mode];
     if (mesh) {
       const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(mesh.quaternion);
       const backward = forward.clone().negate().setY(0).normalize();
-      camera.position.copy(mesh.position).addScaledVector(backward, 32).add(new THREE.Vector3(0, 13.0, 0));
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(mesh.quaternion).setY(0).normalize();
+      camera.position.copy(mesh.position)
+        .addScaledVector(backward, 22)
+        .addScaledVector(right, 7)
+        .add(new THREE.Vector3(0, 9.0, 0));
       controls.target.copy(mesh.position).add(new THREE.Vector3(0, 3.0, 0));
     }
   }
@@ -1409,7 +1460,7 @@ function animate(timestamp) {
       tk.dustTimer += dt;
       if (tk.dustTimer >= 0.08) {
         tk.dustTimer = 0.0;
-        emitDustPuff(mesh, isReturning);
+        emitDustPuff(mesh);
       }
     }
   }
@@ -1428,7 +1479,11 @@ function animate(timestamp) {
     if (mesh) {
       const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(mesh.quaternion);
       const backward = forward.clone().negate().setY(0).normalize();
-      const idealCam = mesh.position.clone().addScaledVector(backward, 32).add(new THREE.Vector3(0, 13.0, 0));
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(mesh.quaternion).setY(0).normalize();
+      const idealCam = mesh.position.clone()
+        .addScaledVector(backward, 22)
+        .addScaledVector(right, 7)
+        .add(new THREE.Vector3(0, 9.0, 0));
       camera.position.lerp(idealCam, 0.08);
       controls.target.lerp(mesh.position.clone().add(new THREE.Vector3(0, 3.0, 0)), 0.08);
     }
