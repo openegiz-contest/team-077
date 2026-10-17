@@ -103,22 +103,37 @@
     /* Left Sidebar: Telemetry & Quality Blending */
     .hud-left {
       position: absolute;
-      top: 72px;
-      left: 20px;
-      width: 330px;
-      max-height: calc(100vh - 140px);
+      top: 68px;
+      left: 18px;
+      width: 320px;
+      max-height: calc(100vh - 120px);
       overflow-y: auto;
       z-index: 10;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(56, 189, 248, 0.35) transparent;
+    }
+    .hud-left::-webkit-scrollbar {
+      width: 5px;
+    }
+    .hud-left::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .hud-left::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.3);
+      border-radius: 4px;
+    }
+    .hud-left::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.6);
     }
     .panel {
       background: rgba(15, 23, 42, 0.88);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 12px;
-      padding: 14px 16px;
+      padding: 12px 14px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
     .panel-header {
@@ -294,6 +309,21 @@
       display: flex;
       flex-direction: column-reverse;
       gap: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(56, 189, 248, 0.35) transparent;
+    }
+    .log-box::-webkit-scrollbar {
+      width: 5px;
+    }
+    .log-box::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .log-box::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.3);
+      border-radius: 4px;
+    }
+    .log-box::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.6);
     }
     .log-item {
       line-height: 1.3;
