@@ -182,7 +182,9 @@ class AktogayPit:
         self.whatif_road_blocked = False
         self.whatif_dilution = False
 
-    def trigger_ex1_failure(self, active: bool = True):
+    def trigger_ex1_failure(self, active: bool = None) -> bool:
+        if active is None:
+            active = not self.whatif_ex1_failure
         self.whatif_ex1_failure = active
         if active:
             self.excavators["excavator-01"].state = "breakdown"
@@ -193,8 +195,11 @@ class AktogayPit:
                     truck.current_segment = "diverted_to_ex2"
         else:
             self.excavators["excavator-01"].state = "idle"
+        return self.whatif_ex1_failure
 
-    def trigger_road_block(self, active: bool = True):
+    def trigger_road_block(self, active: bool = None) -> bool:
+        if active is None:
+            active = not self.whatif_road_blocked
         self.whatif_road_blocked = active
         if active:
             self.radar_status = "alert_collapse"
@@ -215,13 +220,17 @@ class AktogayPit:
                     truck.total_route_km = DIST_EX2_TO_CRUSHER
                 else:
                     truck.total_route_km = DIST_EX3_TO_WASTE
+        return self.whatif_road_blocked
 
-    def trigger_dilution(self, active: bool = True):
+    def trigger_dilution(self, active: bool = None) -> bool:
+        if active is None:
+            active = not self.whatif_dilution
         self.whatif_dilution = active
         if active:
             self.excavators["excavator-02"].face_grade = 0.22  # Sudden dilution
         else:
             self.excavators["excavator-02"].face_grade = self.excavators["excavator-02"].base_grade
+        return self.whatif_dilution
 
     def reset_whatif(self):
         self.trigger_ex1_failure(False)
@@ -455,9 +464,9 @@ class WhatIfHandler(http.server.BaseHTTPRequestHandler):
         pass  # Suppress default noisy access logs
 
     def _send_json(self, status_code: int, data: dict):
-        body = json.dumps(data).encode("utf-8")
+        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status_code)
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
@@ -472,18 +481,38 @@ class WhatIfHandler(http.server.BaseHTTPRequestHandler):
         self.do_GET()
 
     def _handle_whatif(self, path: str):
-        if path == "/api/whatif/ex1-fail":
-            self.pit.trigger_ex1_failure(True)
-            self._send_json(200, {"scenario": "ex1_failure", "status": "active", "message": "EX-01 failure triggered. High-grade feed halted. Rerouting to Stockpile-01."})
-        elif path == "/api/whatif/road-block":
-            self.pit.trigger_road_block(True)
-            self._send_json(200, {"scenario": "road_blocked", "status": "active", "message": "Ramp collapse on horizon +240m triggered. Trucks rerouting via detour road (+1.4 km)."})
-        elif path == "/api/whatif/dilution":
-            self.pit.trigger_dilution(True)
-            self._send_json(200, {"scenario": "dilution", "status": "active", "message": "Severe dilution at EX-02 triggered (grade dropped to 0.22% Cu). Dispatch algorithm adapting blend ratio."})
-        elif path == "/api/whatif/reset":
+        endpoint = path.split("?")[0].rstrip("/")
+        if endpoint == "/api/whatif/ex1-fail":
+            new_state = self.pit.trigger_ex1_failure()
+            if new_state:
+                msg = "[Симуляция] Активирована авария экскаватора EX-01. Подача богатой руды остановлена, самосвалы перенаправлены на Склад-01."
+                status = "active"
+            else:
+                msg = "[Штатный режим] Экскаватор EX-01 возвращен в строй. Подача руды восстановлена."
+                status = "inactive"
+            self._send_json(200, {"scenario": "ex1_failure", "status": status, "active": new_state, "message": msg})
+        elif endpoint == "/api/whatif/road-block":
+            new_state = self.pit.trigger_road_block()
+            if new_state:
+                msg = "[Симуляция] Активирован обвал на горизонте +240м. Основной съезд закрыт, самосвалы направлены по объездной трассе (+1.4 км)."
+                status = "active"
+            else:
+                msg = "[Штатный режим] Завал на съезде расчищен. Движение по основной трассе открыто."
+                status = "inactive"
+            self._send_json(200, {"scenario": "road_blocked", "status": status, "active": new_state, "message": msg})
+        elif endpoint == "/api/whatif/dilution":
+            new_state = self.pit.trigger_dilution()
+            if new_state:
+                msg = "[Симуляция] Активировано разубоживание в забое EX-02 (содержание упало до 0.22% Cu). Диспетчер адаптирует шихтовку."
+                status = "active"
+            else:
+                msg = "[Штатный режим] Содержание руды в забое EX-02 нормализовано (0.40% Cu)."
+                status = "inactive"
+            self._send_json(200, {"scenario": "dilution", "status": status, "active": new_state, "message": msg})
+        elif endpoint == "/api/whatif/reset":
             self.pit.reset_whatif()
-            self._send_json(200, {"scenario": "all", "status": "reset", "message": "All What-If scenarios reset to baseline operational conditions."})
+            msg = "[Штатный режим] Все сценарии «Что-Если» сброшены в исходное состояние."
+            self._send_json(200, {"scenario": "all", "status": "reset", "active": False, "message": msg})
         else:
             self._send_json(404, {"error": "unknown scenario endpoint"})
 

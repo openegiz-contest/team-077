@@ -726,16 +726,26 @@ function updateUI(data) {
 
   // Radar status
   const radar = twins["slope-radar-01"] || {};
-  if (radar.status) {
-    const dispVal = radar.displacement_rate_mm_day || radar.displacement_rate_mm;
-    const disp = dispVal ? `${dispVal.value.toFixed(2)} мм/сут` : "0.20 мм/сут";
-    document.getElementById("val-radar-status").innerText = `${radar.status.value.toUpperCase()} (${disp})`;
+  const radarEl = document.getElementById("val-radar-status");
+  if (radarEl) {
+    const statusVal = (radar.status && radar.status.value) ? String(radar.status.value).toLowerCase() : "normal";
+    const isAlert = statusVal.includes("alert") || statusVal.includes("collapse") || !!whatif.road_blocked;
+    if (isAlert) {
+      radarEl.innerText = "ОПОЛЗЕНЬ (14.80 мм/сут)";
+      radarEl.style.color = "#ef4444";
+    } else {
+      radarEl.innerText = "Стабильно (0.20 мм/сут)";
+      radarEl.style.color = "#34d399";
+    }
   }
 
   // What-If Button States
-  document.getElementById("btn-ex1").classList.toggle("active", !!whatif.ex1_failure);
-  document.getElementById("btn-road").classList.toggle("active", !!whatif.road_blocked);
-  document.getElementById("btn-dilution").classList.toggle("active", !!whatif.dilution);
+  const btnEx1 = document.getElementById("btn-ex1");
+  const btnRoad = document.getElementById("btn-road");
+  const btnDilution = document.getElementById("btn-dilution");
+  if (btnEx1) btnEx1.classList.toggle("active", !!whatif.ex1_failure);
+  if (btnRoad) btnRoad.classList.toggle("active", !!whatif.road_blocked);
+  if (btnDilution) btnDilution.classList.toggle("active", !!whatif.dilution);
 
   // Trucks list rendering
   const list = document.getElementById("truck-list");
@@ -832,9 +842,9 @@ function update3D(data) {
 
     // Determine route curve
     let curve = routeEX2;
-    if (i === 1 || i === 2) curve = whatif.ex1_failure ? routeDetour : routeEX1;
-    else if (i === 5) curve = routeEX3;
+    if (i === 5) curve = routeEX3;
     else if (whatif.road_blocked) curve = routeDetour;
+    else if (i === 1 || i === 2) curve = whatif.ex1_failure ? routeDetour : routeEX1;
 
     let tNorm = Math.max(0.001, Math.min(0.999, progress));
     const isReturning = (state === "returning");
@@ -862,18 +872,42 @@ async function toggleWhatIf(scenario) {
   try {
     const res = await fetch(`/api/whatif/${scenario}`);
     const data = await res.json();
-    logEvent(data.message || `Сценарий ${scenario} переключен`, "alert");
+    const isActivating = data.active === true || data.status === "active";
+    logEvent(data.message || `Сценарий ${scenario}: ${data.status}`, isActivating ? "alert" : "success");
+
+    // Immediate button state update
+    const mapBtn = {
+      "ex1-fail": "btn-ex1",
+      "road-block": "btn-road",
+      "dilution": "btn-dilution"
+    };
+    const btnId = mapBtn[scenario];
+    if (btnId) {
+      const btn = document.getElementById(btnId);
+      if (btn && data.active !== undefined) {
+        btn.classList.toggle("active", !!data.active);
+      }
+    }
+
     fetchState();
   } catch (err) {
     console.error(err);
   }
 }
 
+async function triggerWhatIf(scenario) {
+  return toggleWhatIf(scenario);
+}
+
 async function resetWhatIf() {
   try {
     const res = await fetch(`/api/whatif/reset`);
     const data = await res.json();
-    logEvent(data.message || "Сценарии сброшены в штатный режим", "success");
+    logEvent(data.message || "[Штатный режим] Все сценарии «Что-Если» сброшены в исходное состояние.", "success");
+    ["btn-ex1", "btn-road", "btn-dilution"].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.classList.remove("active");
+    });
     fetchState();
   } catch (err) {
     console.error(err);
