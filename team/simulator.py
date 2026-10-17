@@ -84,9 +84,14 @@ class Truck:
         self.payload_t = TRUCK_CAPACITY_T
         self.speed_kmh = SPEED_UPHILL_LOADED_KMH
         self.grade_in_box = 0.64 if shovel_target == "excavator-01" else (0.40 if shovel_target == "excavator-02" else 0.08)
+        if shovel_target == "excavator-01":
+            self.total_route_km = DIST_EX1_TO_CRUSHER
+        elif shovel_target == "excavator-02":
+            self.total_route_km = DIST_EX2_TO_CRUSHER
+        else:
+            self.total_route_km = DIST_EX3_TO_WASTE
         self.progress_pct = initial_progress
-        self.route_position_km = 0.0
-        self.total_route_km = DIST_EX1_TO_CRUSHER if shovel_target == "excavator-01" else DIST_EX2_TO_CRUSHER
+        self.route_position_km = (initial_progress / 100.0) * self.total_route_km
         self.fuel_tank_l = TRUCK_FUEL_CAPACITY_L * 0.92
         self.fuel_rate_lph = FUEL_RATE_UPHILL_LOADED
         self.trips_total = 0

@@ -8,8 +8,8 @@
 Решение развертывается и запускается в изолированном судейском окружении Ubuntu 24.04 последовательным выполнением команд:
 
 ```bash
-# 1. Установка утилиты make (если отсутствует в базовом образе)
-sudo apt update && sudo apt install -y make
+# 1. Установка утилит make и curl (если отсутствуют в базовом образе)
+sudo apt update && sudo apt install -y make curl
 
 # 2. Поднятие платформы OpenEgiz (Eclipse Ditto, InfluxDB, Grafana, Mosquitto)
 make up

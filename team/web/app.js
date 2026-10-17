@@ -512,7 +512,7 @@ function update3D(data) {
 
     // Determine route curve
     let curve = routeEX2;
-    if (i === 1) curve = whatif.ex1_failure ? routeDetour : routeEX1;
+    if (i === 1 || i === 2) curve = whatif.ex1_failure ? routeDetour : routeEX1;
     else if (i === 5) curve = routeEX3;
     else if (whatif.road_blocked) curve = routeDetour;
 

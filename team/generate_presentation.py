@@ -590,7 +590,7 @@ def build_presentation(out_path: str):
 
     # --- SLIDE 9: ДАШБОРДЫ GRAFANA ---
     story.append(Paragraph("8. Дашборд диспетчера в Grafana", slide_header_style))
-    story.append(Paragraph("Автоматически развертываемый кастомный дашборд <code>team/dashboard.json</code>:", bold_body))
+    story.append(Paragraph("Автоматически развертываемый кастомный дашборд <code>team/dashboard.json</code> (мониторинг всех 13 цифровых двойников: <code>mine-01</code>, 3 экскаватора, 5 самосвалов, <code>crusher-01</code>, <code>stockpile-01</code>, <code>waste-dump-01</code>, <code>slope-radar-01</code>):", bold_body))
     story.append(Paragraph("Путь в интерфейсе: <b>Dashboards → OpenEgiz Examples → Цифровой рудник «Актогай» (Team AURA)</b>", code_box_style))
     story.append(Spacer(1, 6))
 
@@ -608,13 +608,13 @@ def build_presentation(out_path: str):
     story.append(Paragraph("9. Развертывание и соответствие критериям оценки", slide_header_style))
     story.append(Paragraph("<b>Запуск одной командой на тестовом стенде Ubuntu 24.04:</b>", bold_body))
     story.append(Paragraph("<code>make aktogay</code>", code_box_style))
-    story.append(Paragraph("Команда автоматически поднимает стек OpenEgiz, регистрирует 11 двойников в Ditto, запускает симулятор, Three.js 3D-сервер на порту 5000 и монтирует дашборд в Grafana.", body_style))
+    story.append(Paragraph("Команда автоматически поднимает стек OpenEgiz, регистрирует все 13 цифровых двойников в Ditto (mine-01, 3 экскаватора, 5 самосвалов, crusher-01, stockpile-01, waste-dump-01, slope-radar-01), запускает симулятор, Three.js 3D-сервер на порту 5000 и монтирует дашборд в Grafana.", body_style))
     story.append(Spacer(1, 6))
 
     story.append(Paragraph("<b>Самооценка по критериям регламента конкурса (Максимум 100 баллов):</b>", bold_body))
     scores_table = Table([
         [Paragraph("<b>Критерий оценки</b>", bold_body), Paragraph("<b>Макс.</b>", bold_body), Paragraph("<b>Реализация команды AURA</b>", bold_body)],
-        [Paragraph("Модель (Model)", body_style), Paragraph("25", body_style), Paragraph("11 двойников Ditto, полная иерархия, паспортная физика CAT 793F и шихтовка", body_style)],
+        [Paragraph("Модель (Model)", body_style), Paragraph("25", body_style), Paragraph("13 двойников Ditto (mine-01, 3 экскаватора, 5 самосвалов, crusher-01, stockpile-01, waste-dump-01, slope-radar-01), полная иерархия, паспортная физика CAT 793F и шихтовка", body_style)],
         [Paragraph("Пространственная визуализация (Visualization)", body_style), Paragraph("25", body_style), Paragraph("Three.js WebGL, уступы, серпантин, плавная сплайн-анимация, HUD, offline", body_style)],
         [Paragraph("Реалистичность поведения (Behavior Realism)", body_style), Paragraph("20", body_style), Paragraph("Тяговые расчеты, 8% уклон, расход топлива 175 л/ч, радар бортов, шихтовка", body_style)],
         [Paragraph("Замысел и презентация (Concept & Pres.)", body_style), Paragraph("15", body_style), Paragraph("Реальный карьер Актогай, KAZ Minerals, SUBMISSION.md и presentation.pdf", body_style)],
