@@ -554,9 +554,9 @@ class WhatIfHandler(http.server.BaseHTTPRequestHandler):
             self._send_json(404, {"error": "unknown scenario endpoint"})
 
     def _serve_static(self, rel_path: str):
-        if rel_path in ("", "/", "/index.html"):
-            rel_path = "index.html"
-        clean_rel = rel_path.lstrip("/").split("?")[0]
+        clean_rel = rel_path.split("?")[0].lstrip("/")
+        if not clean_rel or clean_rel == "index.html":
+            clean_rel = "index.html"
         full_path = os.path.normpath(os.path.join(WEB_DIR, clean_rel))
         if not full_path.startswith(WEB_DIR) or not os.path.isfile(full_path):
             self._send_json(404, {"error": f"file {clean_rel} not found"})

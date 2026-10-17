@@ -599,11 +599,12 @@
 
   <!-- Bottom Camera Navigation Bar -->
   <footer>
-    <button class="cam-btn active" onclick="setCameraView('orbit')">🌐 Обзор карьера</button>
-    <button class="cam-btn" onclick="setCameraView('crusher')">🏭 Дробилка</button>
-    <button class="cam-btn" onclick="setCameraView('ex1')">⛏️ Забой EX-01 (+280м)</button>
-    <button class="cam-btn" onclick="setCameraView('ex2')">⛏️ Забой EX-02 (+220м)</button>
-    <button class="cam-btn" onclick="setCameraView('truck-01')">🚛 Самосвал 01</button>
+    <button class="cam-btn active" data-cam="orbit" onclick="setCameraView('orbit')">🌐 Обзор карьера</button>
+    <button class="cam-btn" data-cam="crusher" onclick="setCameraView('crusher')">🏭 Дробилка</button>
+    <button class="cam-btn" data-cam="ex1" onclick="setCameraView('ex1')">⛏️ Забой EX-01 (+280м)</button>
+    <button class="cam-btn" data-cam="ex2" onclick="setCameraView('ex2')">⛏️ Забой EX-02 (+220м)</button>
+    <button class="cam-btn" data-cam="waste" onclick="setCameraView('waste')">⛰️ Отвал вскрыши</button>
+    <button class="cam-btn" data-cam="truck-01" onclick="setCameraView('truck-01')">🚛 Самосвал 01</button>
   </footer>
 
   <script src="/app.js"></script>
