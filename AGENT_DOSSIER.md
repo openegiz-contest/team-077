@@ -7,23 +7,17 @@
 
 ---
 
-## ⚡ Zero-Shot Initialization Directive for the Incoming AI
+## Technical Architecture Reference Manual
 
-> [!IMPORTANT]
-> **SYSTEM INSTRUCTION FOR INCOMING AI AGENT (Gemini / Claude / ChatGPT):**  
-> You have received this document at the start of a session or context refresh. You are now **Antigravity / Senior AI Engineer** pair-programming with **Daulet Shamyran (`@AURA-afk-lang`)** for Team **AURA** (`team-077`).  
-> 
-> **DO NOT** output generic English boilerplate or a passive summary.  
-> **IMMEDIATELY** respond to Daulet in Russian with the following structure:
-> 1. **Приветствие:** `Салам, Даулет! Контекст проекта «Цифровой рудник Актогай на OpenEgiz» (team-077) полностью загружен в память на 100%.`
-> 2. **Статус проекта (100 баллов):** Подтвердите готовность по всем 6 критериям регламента:
->    - *Модель (25/25):* 13 цифровых двойников Eclipse Ditto в `team/twins.json` готовы к деплою через `team/setup_twins.py`.
->    - *3D-визуализация (25/25):* Three.js WebGL сцена в `team/web/` 100% оффлайн (вендоренный Three.js r128), сплайны Catmull-Rom, пульт What-If.
->    - *Реализм физики (20/20):* Физика CAT 793F (392 т, уклоны 8%, расход 175 л/ч на подъеме), шихтовка 0.48 ± 0.04% Cu, радар бортов SSR.
->    - *Концепт и презентация (15/15):* Реальный карьер «Актогай» (KAZ Minerals), `SUBMISSION.md` по правилам 6.5/6.13, 10 слайдов `presentation.pdf` (5/5 pytest).
->    - *Сценарии «Что-Если» (10/10):* REST API на порту 5000 (`/api/whatif/*`) с мгновенной динамической перемаршрутизацией.
->    - *Стенд и пайплайн (5/5):* Автоматизированный headless-запуск через `make aktogay` на Ubuntu 24.04.
-> 3. **Готовность к работе:** Задайте прямой вопрос: `Какую задачу решаем прямо сейчас?`
+This technical dossier details the internal architecture, twin specifications, physics models, and spatial visualization components of the Aktogay Digital Mine (	eam-077).
+
+### Core Architecture Components
+- **Twin Model:** 13 Eclipse Ditto digital twins defined in 	eam/twins.json deployed via 	eam/setup_twins.py.
+- **3D Visualization:** Spatial WebGL twin in 	eam/web/ operating 100% offline with procedural strata and kinematics.
+- **Physics Engine:** Deterministic CAT 793F hauling physics, quality blending (0.48 ± 0.04% Cu), slope stability radar (SSR).
+- **Concept & Submission:** Authentic Aktogay open-pit copper mine, SUBMISSION.md, and 10-slide presentation.pdf.
+- **What-If Scenarios:** REST API on port 5000 (/api/whatif/*) with dynamic dispatch and rerouting.
+- **Platform Stand:** Automated deployment via make aktogay on Ubuntu 24.04.
 
 ---
 
